@@ -10,6 +10,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.samples import router as samples_router
 from app.api.v1.jobs import router as jobs_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.admin.knowledge import router as admin_knowledge_router
 from app.config import settings
 from app.database import AsyncSessionLocal
 from app.models.audit import AuditLog
@@ -87,6 +88,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(samples_router, prefix="/api/v1")
 app.include_router(jobs_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
+app.include_router(admin_knowledge_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["系统"])
