@@ -15,15 +15,21 @@ export default function DashboardPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const [u, s] = await Promise.all([authApi.me(), sampleApi.list()]);
+        const u = await authApi.me();
         if (!u.consent_given_at) {
           router.push("/consent");
           return;
         }
         setUser(u);
+        const s = await sampleApi.list();
         setSamples(s);
-      } catch {
-        router.push("/login");
+      } catch (err) {
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          router.push("/login");
+        } else {
+          setUser(null);
+          setSamples([]);
+        }
       } finally {
         setLoading(false);
       }

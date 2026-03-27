@@ -17,8 +17,27 @@ from app.models.audit import AuditLog
 logger = structlog.get_logger()
 
 
+def _run_migrations() -> None:
+    """启动时自动执行数据库迁移"""
+    try:
+        from alembic.config import Config
+        from alembic import command
+        import os
+
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))
+        alembic_cfg.set_main_option(
+            "script_location", os.path.join(os.path.dirname(__file__), "..", "alembic")
+        )
+        alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url_sync)
+        command.upgrade(alembic_cfg, "head")
+        logger.info("数据库迁移完成")
+    except Exception as exc:
+        logger.error("数据库迁移失败", error=str(exc))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _run_migrations()
     logger.info("服务启动", environment=settings.environment)
     yield
     logger.info("服务关闭")

@@ -1,3 +1,4 @@
+import uuid as _uuid
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -23,7 +24,14 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="无效或已过期的令牌",
         )
-    user_id = payload.get("sub")
+    raw_id = payload.get("sub")
+    try:
+        user_id = _uuid.UUID(raw_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效或已过期的令牌",
+        )
     result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
     user = result.scalar_one_or_none()
     if user is None:
