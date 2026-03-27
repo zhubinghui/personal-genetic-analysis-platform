@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     minio_endpoint: str = "minio:9000"
     minio_bucket_idat: str = "idat-raw"
     minio_bucket_reports: str = "reports"
+    minio_bucket_knowledge: str = "knowledge-docs"
     minio_use_ssl: bool = False
 
     # 加密

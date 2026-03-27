@@ -84,6 +84,50 @@ export interface Recommendation {
   timeframe_weeks: number;
 }
 
+// ── 知识库（管理员）────────────────────────────────────────
+
+export type DocumentStatus = "pending" | "processing" | "ready" | "failed";
+export type DocumentFileType = "pdf" | "docx" | "txt" | "md";
+
+export interface KnowledgeDocument {
+  id: string;
+  title: string;
+  description: string | null;
+  authors: string | null;
+  journal: string | null;
+  published_year: number | null;
+  doi: string | null;
+  tags: string[] | null;
+  file_name: string;
+  file_type: DocumentFileType;
+  file_size_bytes: number | null;
+  status: DocumentStatus;
+  error_message: string | null;
+  chunk_count: number;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeDocumentList {
+  total: number;
+  items: KnowledgeDocument[];
+}
+
+export interface SearchResultChunk {
+  document_id: string;
+  document_title: string;
+  chunk_index: number;
+  chunk_text: string;
+  page_number: number | null;
+  score: number;
+}
+
+export interface SearchResponse {
+  query: string;
+  results: SearchResultChunk[];
+}
+
 export interface ReportData {
   job_id: string;
   generated_at: string;

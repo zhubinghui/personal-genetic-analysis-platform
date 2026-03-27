@@ -2,9 +2,12 @@ import Cookies from "js-cookie";
 import type {
   AnalysisResult,
   JobStatus,
+  KnowledgeDocument,
+  KnowledgeDocumentList,
   ReportData,
   Sample,
   SampleUploadResponse,
+  SearchResponse,
   TokenResponse,
   User,
 } from "@/types";
@@ -141,4 +144,57 @@ export const reportApi = {
   get: (jobId: string) => apiFetch<ReportData>(`/reports/${jobId}`),
   pdfUrl: (jobId: string) =>
     `${API_BASE}/api/v1/reports/${jobId}/pdf?token=${Cookies.get("access_token") ?? ""}`,
+};
+
+// ── 管理员知识库 ───────────────────────────────────────────────
+export const knowledgeApi = {
+  list: (params?: { skip?: number; limit?: number; status_filter?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.skip !== undefined) qs.set("skip", String(params.skip));
+    if (params?.limit !== undefined) qs.set("limit", String(params.limit));
+    if (params?.status_filter) qs.set("status_filter", params.status_filter);
+    const query = qs.toString() ? `?${qs}` : "";
+    return apiFetch<KnowledgeDocumentList>(`/admin/knowledge${query}`);
+  },
+
+  get: (docId: string) =>
+    apiFetch<KnowledgeDocument>(`/admin/knowledge/${docId}`),
+
+  upload: (
+    file: File,
+    meta: {
+      title: string;
+      description?: string;
+      authors?: string;
+      journal?: string;
+      published_year?: number;
+      doi?: string;
+      tags?: string;
+    },
+  ) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("title", meta.title);
+    if (meta.description) form.append("description", meta.description);
+    if (meta.authors) form.append("authors", meta.authors);
+    if (meta.journal) form.append("journal", meta.journal);
+    if (meta.published_year !== undefined)
+      form.append("published_year", String(meta.published_year));
+    if (meta.doi) form.append("doi", meta.doi);
+    if (meta.tags) form.append("tags", meta.tags);
+    return apiFetch<KnowledgeDocument>("/admin/knowledge", { method: "POST", body: form });
+  },
+
+  delete: (docId: string) =>
+    apiFetch<void>(`/admin/knowledge/${docId}`, { method: "DELETE" }),
+
+  reprocess: (docId: string) =>
+    apiFetch<KnowledgeDocument>(`/admin/knowledge/${docId}/reprocess`, { method: "POST" }),
+
+  search: (query: string, topK = 5, scoreThreshold = 0.3) =>
+    apiFetch<SearchResponse>("/admin/knowledge/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, top_k: topK, score_threshold: scoreThreshold }),
+    }),
 };

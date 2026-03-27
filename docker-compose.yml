@@ -6,11 +6,12 @@ volumes:
   pgdata:
   redisdata:
   minio_data:
+  fastembed_cache:  # 本地嵌入模型缓存（首次启动时自动下载，约 33 MB）
 
 services:
-  # ── PostgreSQL ──────────────────────────────────────────────
+  # ── PostgreSQL + pgvector ────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -69,6 +70,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET_IDAT: ${MINIO_BUCKET_IDAT}
       MINIO_BUCKET_REPORTS: ${MINIO_BUCKET_REPORTS}
+      MINIO_BUCKET_KNOWLEDGE: ${MINIO_BUCKET_KNOWLEDGE}
     volumes:
       - ./infrastructure/minio/setup.sh:/scripts/setup.sh:ro
     networks:
@@ -80,6 +82,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     env_file: .env
+    environment:
+      FASTEMBED_CACHE_PATH: /app/.cache/fastembed
+    volumes:
+      - fastembed_cache:/app/.cache/fastembed
     depends_on:
       postgres:
         condition: service_healthy

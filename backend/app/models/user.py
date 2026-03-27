@@ -24,6 +24,7 @@ class User(Base):
     )
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     consent_version: Mapped[str | None] = mapped_column(String(20), nullable=True)
     consent_given_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
