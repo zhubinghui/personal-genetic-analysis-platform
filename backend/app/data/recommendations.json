@@ -1,0 +1,310 @@
+{
+  "cardiovascular.blood_pressure": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "DASH 饮食方案",
+        "summary": "每天摄入水果、蔬菜、低脂乳制品，限制钠摄入 < 2300mg，可降低收缩压 8-14 mmHg。",
+        "evidence_level": "A",
+        "pmids": ["9549088", "15328324"],
+        "category": "diet",
+        "timeframe_weeks": 8
+      },
+      {
+        "priority": 2,
+        "title": "有氧运动（Zone 2 训练）",
+        "summary": "每周 150 分钟中等强度有氧运动（最大心率 60-70%），降低舒张压约 3-5 mmHg，同时改善甲基化年龄加速。",
+        "evidence_level": "A",
+        "pmids": ["31504075", "28467327"],
+        "category": "exercise",
+        "timeframe_weeks": 12
+      },
+      {
+        "priority": 3,
+        "title": "限制钠摄入",
+        "summary": "将每日钠摄入降至 1500mg 以下，研究显示与 DASH 联用可额外降低收缩压 5 mmHg。",
+        "evidence_level": "A",
+        "pmids": ["11511317"],
+        "category": "diet",
+        "timeframe_weeks": 4
+      }
+    ]
+  },
+  "cardiovascular.cholesterol": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "地中海饮食",
+        "summary": "富含橄榄油、坚果、鱼类的地中海饮食可降低 LDL 胆固醇 10-15%，并降低 DNA 甲基化年龄加速。",
+        "evidence_level": "A",
+        "pmids": ["23704726", "33574180"],
+        "category": "diet",
+        "timeframe_weeks": 12
+      },
+      {
+        "priority": 2,
+        "title": "可溶性膳食纤维",
+        "summary": "每日摄入 5-10g 可溶性纤维（燕麦、豆类），可降低 LDL 约 5%。",
+        "evidence_level": "A",
+        "pmids": ["7722152"],
+        "category": "diet",
+        "timeframe_weeks": 8
+      }
+    ]
+  },
+  "cardiovascular.triglycerides": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "Omega-3 脂肪酸补充",
+        "summary": "高剂量 EPA+DHA（2-4g/天）可降低甘油三酯 20-40%，多项 RCT 确认效果。",
+        "evidence_level": "A",
+        "pmids": ["20032469", "19713525"],
+        "category": "supplement",
+        "timeframe_weeks": 8
+      },
+      {
+        "priority": 2,
+        "title": "限制精制碳水化合物和糖",
+        "summary": "减少含糖饮料、白面包、精米的摄入，低碳水饮食显著降低甘油三酯水平。",
+        "evidence_level": "A",
+        "pmids": ["16685042"],
+        "category": "diet",
+        "timeframe_weeks": 6
+      }
+    ]
+  },
+  "metabolic.hba1c": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "限时饮食（TRF 16:8）",
+        "summary": "将进食窗口限制在 8 小时内（如 12:00-20:00），研究显示 3 个月后 HbA1c 平均降低 0.3%，同时改善多个甲基化时钟指标。",
+        "evidence_level": "A",
+        "pmids": ["34633860", "31164731"],
+        "category": "lifestyle",
+        "timeframe_weeks": 12
+      },
+      {
+        "priority": 2,
+        "title": "餐后步行",
+        "summary": "每次餐后步行 10-15 分钟，可降低餐后血糖峰值约 22%，长期改善胰岛素敏感性。",
+        "evidence_level": "B",
+        "pmids": ["24817717"],
+        "category": "exercise",
+        "timeframe_weeks": 4
+      },
+      {
+        "priority": 3,
+        "title": "抗阻训练",
+        "summary": "每周 2-3 次抗阻训练（自重或器械），12 周后 HbA1c 平均降低 0.5%，效果与有氧运动相当。",
+        "evidence_level": "A",
+        "pmids": ["17327355"],
+        "category": "exercise",
+        "timeframe_weeks": 12
+      }
+    ]
+  },
+  "metabolic.bmi": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "热量限制",
+        "summary": "每日减少 500 kcal 摄入，6 个月可减重约 5%，同时显著改善 DunedinPACE 代谢维度评分。",
+        "evidence_level": "A",
+        "pmids": ["28467327"],
+        "category": "diet",
+        "timeframe_weeks": 24
+      },
+      {
+        "priority": 2,
+        "title": "蛋白质优化饮食",
+        "summary": "每日蛋白质摄入 1.2-1.6g/kg 体重，配合抗阻训练可在减脂同时维持肌肉量。",
+        "evidence_level": "A",
+        "pmids": ["28978542"],
+        "category": "diet",
+        "timeframe_weeks": 12
+      }
+    ]
+  },
+  "renal.bun": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "充足水分摄入",
+        "summary": "每日饮水 2-3 升（根据体重和活动量调整），维持充分的肾小球滤过率。",
+        "evidence_level": "B",
+        "pmids": ["22336328"],
+        "category": "lifestyle",
+        "timeframe_weeks": 4
+      },
+      {
+        "priority": 2,
+        "title": "适量蛋白质摄入",
+        "summary": "避免超高蛋白饮食（> 2.5g/kg），过高蛋白摄入增加肾脏代谢负担。",
+        "evidence_level": "B",
+        "pmids": ["14668278"],
+        "category": "diet",
+        "timeframe_weeks": 8
+      }
+    ]
+  },
+  "pulmonary.fev1": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "有氧耐力训练",
+        "summary": "每周 3-5 次有氧训练（跑步、游泳、骑车），12 周后 FEV1 可提升 5-10%。",
+        "evidence_level": "A",
+        "pmids": ["23027496"],
+        "category": "exercise",
+        "timeframe_weeks": 12
+      },
+      {
+        "priority": 2,
+        "title": "避免空气污染暴露",
+        "summary": "减少 PM2.5 暴露，研究显示长期暴露与 DNA 甲基化肺功能加速有关。",
+        "evidence_level": "B",
+        "pmids": ["28977578"],
+        "category": "lifestyle",
+        "timeframe_weeks": 4
+      }
+    ]
+  },
+  "immune.crp": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "Omega-3 脂肪酸",
+        "summary": "每日 2-4g EPA+DHA 可降低 CRP 约 20-30%，多项 RCT 和 Meta 分析确认其抗炎效果。",
+        "evidence_level": "A",
+        "pmids": ["29097561", "25339684"],
+        "category": "supplement",
+        "timeframe_weeks": 8
+      },
+      {
+        "priority": 2,
+        "title": "优化睡眠质量",
+        "summary": "每晚 7-9 小时高质量睡眠显著降低炎症标志物，睡眠不足（< 6h）与 CRP 升高 40% 相关。",
+        "evidence_level": "A",
+        "pmids": ["24678070"],
+        "category": "lifestyle",
+        "timeframe_weeks": 4
+      },
+      {
+        "priority": 3,
+        "title": "正念冥想（MBSR）",
+        "summary": "8 周正念减压训练可降低 CRP 约 25%，同时改善多个 DNA 甲基化衰老指标。",
+        "evidence_level": "B",
+        "pmids": ["26970977"],
+        "category": "lifestyle",
+        "timeframe_weeks": 8
+      }
+    ]
+  },
+  "immune.wbc": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "规律中等强度运动",
+        "summary": "中等强度运动（而非极高强度）可调节免疫系统，避免免疫衰老加速。",
+        "evidence_level": "B",
+        "pmids": ["32454816"],
+        "category": "exercise",
+        "timeframe_weeks": 12
+      }
+    ]
+  },
+  "periodontal.attachment_loss": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "专业洁牙与日常口腔护理",
+        "summary": "每半年专业洁牙，每日使用牙线和冲牙器，牙周健康与多个系统性炎症指标直接相关。",
+        "evidence_level": "A",
+        "pmids": ["23725282"],
+        "category": "lifestyle",
+        "timeframe_weeks": 12
+      },
+      {
+        "priority": 2,
+        "title": "益生菌（乳酸菌株）",
+        "summary": "含 Lactobacillus reuteri 的益生菌补充可减少牙龈出血和牙周袋深度，研究表明对 DNA 甲基化牙周维度有正向影响。",
+        "evidence_level": "B",
+        "pmids": ["33383328"],
+        "category": "supplement",
+        "timeframe_weeks": 12
+      }
+    ]
+  },
+  "cognitive.wechsler_score": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "认知挑战性活动",
+        "summary": "学习新技能（乐器、语言、棋类）每周 3 次以上，可维持神经可塑性并减缓认知甲基化年龄加速。",
+        "evidence_level": "B",
+        "pmids": ["25733314"],
+        "category": "lifestyle",
+        "timeframe_weeks": 24
+      },
+      {
+        "priority": 2,
+        "title": "地中海-MIND 饮食",
+        "summary": "MIND 饮食（地中海饮食 + 神经保护食物：浆果、绿叶蔬菜、坚果）与认知功能保护相关。",
+        "evidence_level": "B",
+        "pmids": ["25916888"],
+        "category": "diet",
+        "timeframe_weeks": 24
+      }
+    ]
+  },
+  "physical.grip_strength": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "渐进式抗阻训练",
+        "summary": "每周 2-3 次全身抗阻训练，优先复合动作（深蹲、硬拉、推举），握力是全身肌肉力量的可靠替代指标。",
+        "evidence_level": "A",
+        "pmids": ["26881718"],
+        "category": "exercise",
+        "timeframe_weeks": 12
+      },
+      {
+        "priority": 2,
+        "title": "肌酸补充",
+        "summary": "每日 3-5g 单水肌酸配合抗阻训练，可提升肌肉力量 5-10%，并有新兴研究支持其对肌肉甲基化年龄的益处。",
+        "evidence_level": "B",
+        "pmids": ["12701816"],
+        "category": "supplement",
+        "timeframe_weeks": 8
+      }
+    ]
+  },
+  "physical.balance": {
+    "threshold_high": 1.1,
+    "recommendations": [
+      {
+        "priority": 1,
+        "title": "太极拳或瑜伽",
+        "summary": "每周 3 次太极或平衡训练，12 周后平衡能力显著改善，同时降低跌倒风险和相关甲基化加速。",
+        "evidence_level": "B",
+        "pmids": ["27386088"],
+        "category": "exercise",
+        "timeframe_weeks": 12
+      }
+    ]
+  }
+}

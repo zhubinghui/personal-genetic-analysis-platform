@@ -1,0 +1,39 @@
+# 本地开发覆盖：暴露端口、开启热重载
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  minio:
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # MinIO Console
+
+  backend:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+
+  worker:
+    command: celery -A worker.celery_app worker --loglevel=debug -Q analysis --concurrency=1
+    volumes:
+      - ./analysis:/app
+
+  frontend:
+    command: npm run dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+  nginx:
+    ports:
+      - "80:80"

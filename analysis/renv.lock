@@ -1,0 +1,99 @@
+{
+  "R": {
+    "Version": "4.4.0",
+    "Repositories": [
+      {
+        "Name": "CRAN",
+        "URL": "https://cloud.r-project.org"
+      },
+      {
+        "Name": "Bioconductor",
+        "URL": "https://bioconductor.org/packages/3.19/bioc"
+      }
+    ]
+  },
+  "Packages": {
+    "renv": {
+      "Package": "renv",
+      "Version": "1.0.7",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "BiocManager": {
+      "Package": "BiocManager",
+      "Version": "1.30.23",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "remotes": {
+      "Package": "remotes",
+      "Version": "2.5.0",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "minfi": {
+      "Package": "minfi",
+      "Version": "1.48.0",
+      "Source": "Bioconductor"
+    },
+    "IlluminaHumanMethylationEPICmanifest": {
+      "Package": "IlluminaHumanMethylationEPICmanifest",
+      "Version": "0.3.0",
+      "Source": "Bioconductor"
+    },
+    "IlluminaHumanMethylationEPICanno.ilm10b4.hg19": {
+      "Package": "IlluminaHumanMethylationEPICanno.ilm10b4.hg19",
+      "Version": "0.6.0",
+      "Source": "Bioconductor"
+    },
+    "IlluminaHumanMethylation450kmanifest": {
+      "Package": "IlluminaHumanMethylation450kmanifest",
+      "Version": "0.4.0",
+      "Source": "Bioconductor"
+    },
+    "IlluminaHumanMethylation450kanno.ilmn12.hg19": {
+      "Package": "IlluminaHumanMethylation450kanno.ilmn12.hg19",
+      "Version": "0.6.1",
+      "Source": "Bioconductor"
+    },
+    "preprocessCore": {
+      "Package": "preprocessCore",
+      "Version": "1.66.0",
+      "Source": "Bioconductor"
+    },
+    "methylclock": {
+      "Package": "methylclock",
+      "Version": "1.10.0",
+      "Source": "Bioconductor"
+    },
+    "wateRmelon": {
+      "Package": "wateRmelon",
+      "Version": "2.8.0",
+      "Source": "Bioconductor"
+    },
+    "jsonlite": {
+      "Package": "jsonlite",
+      "Version": "1.8.8",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "optparse": {
+      "Package": "optparse",
+      "Version": "1.7.5",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
+    "DunedinPACE": {
+      "Package": "DunedinPACE",
+      "Version": "0.99.0",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteRepo": "DunedinPACE",
+      "RemoteUsername": "danbelsky",
+      "RemotePkgRef": "danbelsky/DunedinPACE",
+      "RemoteRef": "main",
+      "RemoteSha": "4b569983543e51d1022aecec9a25e694bb3a336a"
+    }
+  }
+}
