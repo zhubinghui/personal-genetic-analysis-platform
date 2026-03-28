@@ -88,6 +88,7 @@ cp .env.example .env
 # - JWT_SECRET_KEY（建议用 openssl rand -hex 32 生成）
 # - FILE_ENCRYPTION_KEY（建议用 python3 -c "import secrets,base64; print(base64.b64encode(secrets.token_bytes(32)).decode())" 生成）
 # - MINIO_ROOT_PASSWORD
+# - RESEND_API_KEY（邮箱验证，见下方「邮件 & 短信配置」）
 
 # 3. 构建镜像（首次约 30-60 分钟，主要是 R 包编译）
 docker compose build
@@ -226,7 +227,71 @@ docker compose exec backend pytest tests/ -v
 docker compose exec backend ruff check app/ && mypy app/
 ```
 
+## 邮件 & 短信验证配置
+
+平台支持**邮箱验证码**和**短信验证码**双通道，用户注册后需验证邮箱方可登录。至少需要配置一个通道。
+
+### 邮箱通道：Resend API（推荐）
+
+[Resend](https://resend.com) 是现代邮件 API 服务，免费额度 3000 封/月，仅需一个 API Key，无需配置 SMTP 服务器。
+
+```bash
+# 1. 注册 https://resend.com（支持 GitHub 登录）
+# 2. 在 Dashboard → API Keys 创建 Key
+# 3. 添加到 .env：
+
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
+EMAIL_FROM_ADDRESS=onboarding@resend.dev   # 免费版可用 resend.dev 域名发信
+EMAIL_FROM_NAME=基因抗衰老分析平台
+
+# 如需自定义发信域名（如 noreply@yourdomain.com），在 Resend 控制台添加域名并配置 DNS
+```
+
+### 短信通道：阿里云短信（可选）
+
+[阿里云短信服务](https://dysms.console.aliyun.com) 支持国内手机号，约 0.04 元/条。
+
+```bash
+# 1. 登录阿里云控制台 → 短信服务
+# 2. 创建 RAM 子用户（仅授予 AliyunDysmsFullAccess 权限），获取 AccessKey
+# 3. 添加短信签名（如「基因分析平台」），等待审核通过
+# 4. 添加短信模板，内容如：「您的验证码为${code}，10分钟内有效。」，等待审核通过
+# 5. 添加到 .env：
+
+ALIYUN_ACCESS_KEY_ID=LTAI5txxxxxxxxxxxxxxxxxx
+ALIYUN_ACCESS_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ALIYUN_SMS_SIGN_NAME=基因分析平台
+ALIYUN_SMS_TEMPLATE_CODE=SMS_27xxxxx
+
+# 验证码有效期（两个通道共用）
+VERIFY_CODE_EXPIRE_MINUTES=10
+```
+
+### 验证流程说明
+
+| 场景 | 流程 |
+|---|---|
+| **注册** | 填写邮箱 + 密码 + 可选手机号 → 自动发验证码到邮箱 → 输入 6 位验证码 → 账号激活 |
+| **登录** | 未验证用户返回 403，提示验证邮箱，可一键重发验证码 |
+| **忘记密码** | 选择邮箱或短信通道 → 收到重置验证码 → 输入验证码 + 新密码 → 重置成功 |
+
+> **注意**：未配置 Resend API Key 时，验证码发送会被静默跳过，新注册用户将无法完成验证。建议部署前务必配置至少一个通道。
+
 ## 更新日志
+
+---
+
+### v0.2.1 — 2026.03.28
+
+---
+
+#### 双通道身份验证
+- 邮箱验证：SMTP 替换为 Resend API（一个 API Key 即可，免费 3000 封/月）
+- 短信验证：集成阿里云短信 API（国内号码全覆盖，约 0.04 元/条）
+- 6 位数字验证码 + Redis 存储 + TTL 自动过期（替代原 JWT 链接方案）
+- 注册时自动发送验证码，未验证用户登录返回 403
+- 忘记密码：邮箱/短信双通道切换，验证码重置密码
+- 用户模型新增 phone 字段（可选），注册时可同时绑定手机号
 
 ---
 
