@@ -381,11 +381,30 @@ async def upload_batch(
 @router.get("/{doc_id}/preview")
 async def preview_document(
     doc_id: uuid.UUID,
-    _: Annotated[User, Depends(get_admin_user)] = None,
-    db: Annotated[AsyncSession, Depends(get_db)] = None,
-    storage: Annotated[StorageService, Depends(get_storage)] = None,
+    token: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    storage: StorageService = Depends(get_storage),
 ):
-    """从 MinIO 流式传输原始文件（用于 PDF.js 在线预览）。"""
+    """
+    从 MinIO 流式传输原始文件（用于浏览器内 PDF 预览）。
+    支持 ?token=xxx 查询参数认证（因浏览器直接导航不发 Authorization header）。
+    """
+    from app.utils.auth import decode_access_token
+    from sqlalchemy import select as sa_select
+    from app.models.user import User as UserModel
+
+    if not token:
+        raise HTTPException(status_code=401, detail="缺少认证 token")
+
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="token 无效或已过期")
+
+    user_id = payload.get("sub")
+    result = await db.execute(sa_select(UserModel).where(UserModel.id == user_id, UserModel.is_admin == True))
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=403, detail="需要管理员权限")
+
     doc = await get_document(db, doc_id)
     if doc is None:
         raise HTTPException(status_code=404, detail="文献不存在")
