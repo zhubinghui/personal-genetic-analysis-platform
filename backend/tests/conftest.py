@@ -73,9 +73,25 @@ def encryption_key() -> bytes:
     return base64.b64decode("dGVzdGtleTEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNA==")
 
 
+def _verify_user_sync(email: str) -> None:
+    """用 psycopg2 同步设置 email_verified=true。"""
+    import psycopg2
+    sync_url = os.environ.get(
+        "DATABASE_URL_SYNC",
+        "postgresql://app_user:changeme@postgres:5432/genetic_platform",
+    )
+    conn = psycopg2.connect(sync_url)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET email_verified=true, email_verified_at=NOW() WHERE email=%s", (email,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 @pytest_asyncio.fixture
 async def test_user(client: AsyncClient) -> dict:
-    """通过 API 创建普通测试用户，返回 {email, password, user_data}。"""
+    """通过 API 创建已验证的普通测试用户。"""
     email = f"test_{uuid.uuid4().hex[:8]}@example.com"
     password = "TestPass123!"
     res = await client.post("/api/v1/auth/register", json={
@@ -83,6 +99,7 @@ async def test_user(client: AsyncClient) -> dict:
         "password": password,
     })
     assert res.status_code == 201, f"注册失败: {res.text}"
+    _verify_user_sync(email)
     return {"email": email, "password": password, **res.json()}
 
 
@@ -98,7 +115,8 @@ async def admin_user(client: AsyncClient) -> dict:
     res = await client.post("/api/v1/auth/register", json={"email": email, "password": password})
     assert res.status_code == 201, f"注册管理员失败: {res.text}"
 
-    # 2. 用同步 psycopg2 设置 is_admin=true（绕过 asyncpg 事件循环问题）
+    # 2. 用同步 psycopg2 设置 is_admin=true + email_verified=true
+    import psycopg2
     sync_url = os.environ.get(
         "DATABASE_URL_SYNC",
         "postgresql://app_user:changeme@postgres:5432/genetic_platform",
@@ -106,7 +124,10 @@ async def admin_user(client: AsyncClient) -> dict:
     conn = psycopg2.connect(sync_url)
     try:
         with conn.cursor() as cur:
-            cur.execute("UPDATE users SET is_admin=true WHERE email=%s", (email,))
+            cur.execute(
+                "UPDATE users SET is_admin=true, email_verified=true, email_verified_at=NOW() WHERE email=%s",
+                (email,),
+            )
         conn.commit()
     finally:
         conn.close()
