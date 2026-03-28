@@ -38,6 +38,8 @@ class KnowledgeDocument(Base):
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
     file_type: Mapped[str] = mapped_column(String(10), nullable=False)  # pdf/docx/txt
     file_size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # 文件内容 SHA-256，用于防止重复上传（UNIQUE 约束在迁移中定义）
+    file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
 
     # 处理状态：pending / processing / ready / failed
     status: Mapped[str] = mapped_column(String(20), server_default="pending")

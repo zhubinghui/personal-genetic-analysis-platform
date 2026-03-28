@@ -80,6 +80,10 @@ async def upload_document(
     storage: Annotated[StorageService, Depends(get_storage)] = None,
 ):
     """上传文献文件（PDF / DOCX / TXT），并启动后台向量化处理。"""
+    import hashlib
+    import io
+    import asyncio
+
     file_ext = _get_file_ext(file.filename or "")
     if file_ext not in ALLOWED_TYPES:
         raise HTTPException(
@@ -94,11 +98,21 @@ async def upload_document(
             detail="文件大小超过 50 MB 限制",
         )
 
+    # 计算文件 SHA-256，防止重复上传
+    file_hash = hashlib.sha256(file_bytes).hexdigest()
+    existing = await db.execute(
+        select(KnowledgeDocument).where(KnowledgeDocument.file_hash == file_hash)
+    )
+    duplicate = existing.scalar_one_or_none()
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"文件已存在：《{duplicate.title}》（上传于 {duplicate.created_at.strftime('%Y-%m-%d')}），请勿重复上传",
+        )
+
     # 存储到 MinIO（knowledge 专用 bucket，无加密——文献是公开文献）
     doc_id = uuid.uuid4()
     object_key = f"knowledge/{doc_id}/{file.filename}"
-    import io
-    import asyncio
     await asyncio.to_thread(
         storage.client.put_object,
         settings.minio_bucket_knowledge,
@@ -125,6 +139,7 @@ async def upload_document(
         file_name=file.filename or f"document.{file_ext}",
         file_type=file_ext,
         file_size_bytes=len(file_bytes),
+        file_hash=file_hash,
         status="pending",
         uploaded_by=current_admin.id,
     )
