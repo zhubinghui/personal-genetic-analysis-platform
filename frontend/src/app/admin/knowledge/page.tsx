@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Cookies from "js-cookie";
 import { knowledgeApi, ApiError } from "@/lib/api";
 import type { KnowledgeDocument, DocumentStatus } from "@/types";
 
@@ -230,7 +231,7 @@ export default function KnowledgeListPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     {doc.file_type === "pdf" && doc.status === "ready" && (
                       <a
-                        href={`/api/v1/admin/knowledge/${doc.id}/preview`}
+                        href={`/api/v1/admin/knowledge/${doc.id}/preview?token=${Cookies.get("access_token") ?? ""}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs px-3 py-1.5 border border-brand-200 text-brand-600 rounded-lg hover:bg-brand-50 transition"
