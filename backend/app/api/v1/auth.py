@@ -10,7 +10,7 @@ from app.config import settings
 from app.database import get_db
 from app.models.audit import AuditLog
 from app.models.user import User
-from app.schemas.user import ConsentRequest, TokenResponse, UserCreate, UserLogin, UserOut
+from app.schemas.user import ChangePasswordRequest, ConsentRequest, TokenResponse, UserCreate, UserLogin, UserOut
 from app.utils.auth import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["认证"])
@@ -73,6 +73,34 @@ async def login(
 
 @router.get("/me", response_model=UserOut)
 async def me(current_user: Annotated[User, Depends(get_current_user)]) -> User:
+    return current_user
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TokenResponse:
+    """刷新 JWT Token（在旧 Token 过期前调用）"""
+    token = create_access_token({"sub": str(current_user.id)})
+    return TokenResponse(
+        access_token=token,
+        expires_in=settings.jwt_access_expire_minutes * 60,
+    )
+
+
+@router.post("/change-password", response_model=UserOut)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User:
+    """修改当前用户密码"""
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="当前密码错误")
+    current_user.password_hash = hash_password(body.new_password)
+    await db.commit()
+    await db.refresh(current_user)
     return current_user
 
 

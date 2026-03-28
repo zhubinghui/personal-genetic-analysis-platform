@@ -27,36 +27,90 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow p-8 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800">登录</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
-            <input
-              type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none"
-            />
+    <div className="min-h-screen flex">
+      {/* 左侧品牌区域 */}
+      <div className="hidden lg:flex lg:w-1/2 gradient-brand flex-col justify-center px-16 relative overflow-hidden">
+        <div className="relative z-10 max-w-lg">
+          <div className="text-5xl mb-6">🧬</div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">基因抗衰老分析平台</h1>
+          <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+            上传血液 DNA 甲基化数据，获取个性化的生物学年龄评估与循证抗衰老建议。
+          </p>
+          <div className="space-y-3">
+            {[
+              { icon: "🔬", title: "4 大衰老时钟", desc: "Horvath、GrimAge、PhenoAge、DunedinPACE" },
+              { icon: "📊", title: "19 维度深度分析", desc: "心血管、代谢、免疫等 9 大系统分项评估" },
+              { icon: "📋", title: "循证干预建议", desc: "基于 PubMed 文献的个性化抗衰老方案" },
+              { icon: "🔒", title: "隐私优先设计", desc: "AES-256 加密 + 假名化数据架构" },
+            ].map((item) => (
+              <div key={item.title} className="flex items-start gap-3 bg-white/60 backdrop-blur rounded-xl p-3">
+                <span className="text-xl mt-0.5">{item.icon}</span>
+                <div>
+                  <p className="font-medium text-gray-800 text-sm">{item.title}</p>
+                  <p className="text-xs text-gray-500">{item.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">密码</label>
-            <input
-              type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none"
-            />
+        </div>
+        <div className="absolute -right-20 -top-20 w-80 h-80 bg-brand-200/30 rounded-full" />
+        <div className="absolute -left-10 -bottom-10 w-60 h-60 bg-brand-300/20 rounded-full" />
+      </div>
+
+      {/* 右侧登录表单 */}
+      <div className="flex-1 flex items-center justify-center px-6 bg-white">
+        <div className="w-full max-w-sm">
+          <div className="lg:hidden text-center mb-8">
+            <span className="text-4xl">🧬</span>
+            <h1 className="text-xl font-bold text-gray-800 mt-2">基因抗衰老分析平台</h1>
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button
-            type="submit" disabled={loading}
-            className="w-full bg-brand-600 text-white py-2 rounded-lg hover:bg-brand-700 disabled:opacity-50 transition"
-          >
-            {loading ? "登录中..." : "登录"}
-          </button>
-        </form>
-        <p className="text-sm text-center text-gray-500">
-          没有账号？{" "}
-          <Link href="/register" className="text-brand-600 hover:underline">注册</Link>
-        </p>
+
+          <h2 className="text-2xl font-bold text-gray-800 mb-1">欢迎回来</h2>
+          <p className="text-sm text-gray-500 mb-8">登录您的账号继续使用平台</p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">邮箱</label>
+              <input
+                type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">密码</label>
+              <input
+                type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder="输入密码"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-sm text-red-600">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit" disabled={loading}
+              className="w-full py-3 bg-brand-600 text-white rounded-xl font-medium
+                         hover:bg-brand-700 disabled:opacity-50 transition shadow-sm shadow-brand-200"
+            >
+              {loading ? "登录中..." : "登录"}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-gray-500 mt-6">
+            没有账号？{" "}
+            <Link href="/register" className="text-brand-600 hover:underline font-medium">立即注册</Link>
+          </p>
+          <p className="text-center text-xs text-gray-400 mt-8">
+            本平台仅提供健康管理参考，不构成医疗诊断建议。
+          </p>
+        </div>
       </div>
     </div>
   );

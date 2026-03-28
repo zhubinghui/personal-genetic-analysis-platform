@@ -1,5 +1,7 @@
 import Cookies from "js-cookie";
 import type {
+  AdminUser,
+  AdminUserList,
   AnalysisResult,
   JobStatus,
   KnowledgeDocument,
@@ -96,6 +98,16 @@ export const authApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ version }),
     }),
+
+  refresh: () =>
+    apiFetch<TokenResponse>("/auth/refresh", { method: "POST" }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiFetch<User>("/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }),
 };
 
 // ── 样本上传 ─────────────────────────────────────────────────
@@ -150,6 +162,26 @@ export const reportApi = {
 // ── 纵向对比 ───────────────────────────────────────────────────
 export const trendApi = {
   get: () => apiFetch<TrendResponse>("/trends"),
+};
+
+// ── 管理员用户管理 ──────────────────────────────────────────────
+export const adminUserApi = {
+  list: (skip = 0, limit = 50) =>
+    apiFetch<AdminUserList>(`/admin/users?skip=${skip}&limit=${limit}`),
+
+  setRole: (userId: string, isAdmin: boolean) =>
+    apiFetch<AdminUser>(`/admin/users/${userId}/role`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_admin: isAdmin }),
+    }),
+
+  setStatus: (userId: string, isActive: boolean) =>
+    apiFetch<AdminUser>(`/admin/users/${userId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: isActive }),
+    }),
 };
 
 // ── 管理员知识库 ───────────────────────────────────────────────
