@@ -313,6 +313,11 @@ export const knowledgeApi = {
   reprocess: (docId: string) =>
     apiFetch<KnowledgeDocument>(`/admin/knowledge/${docId}/reprocess`, { method: "POST" }),
 
+  stats: () =>
+    apiFetch<{ total: number; ready: number; processing: number; pending: number; failed: number; total_chunks: number }>(
+      "/admin/knowledge/stats",
+    ),
+
   uploadBatch: (files: File[]) => {
     const form = new FormData();
     files.forEach((f) => form.append("files", f));

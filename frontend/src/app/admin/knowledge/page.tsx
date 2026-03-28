@@ -42,6 +42,7 @@ export default function KnowledgeListPage() {
     score: number;
   }> | null>(null);
   const [searching, setSearching] = useState(false);
+  const [stats, setStats] = useState<{ total: number; ready: number; processing: number; pending: number; failed: number; total_chunks: number } | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -70,13 +71,21 @@ export default function KnowledgeListPage() {
     }
   }, []);
 
+  const loadStats = useCallback(async () => {
+    try {
+      const s = await knowledgeApi.stats();
+      setStats(s);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     loadDocs(page);
+    loadStats();
     const timer = setInterval(() => {
-      if (!authFailed) loadDocs(page);
+      if (!authFailed) { loadDocs(page); loadStats(); }
     }, 10_000);
     return () => clearInterval(timer);
-  }, [loadDocs, authFailed, page]);
+  }, [loadDocs, loadStats, authFailed, page]);
 
   const handleDelete = async (docId: string) => {
     if (!confirm("确定要删除该文献吗？此操作不可撤销。")) return;
@@ -124,7 +133,30 @@ export default function KnowledgeListPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">知识库文献</h1>
-          <p className="text-sm text-gray-500 mt-1">共 {total} 篇文献</p>
+          {stats && (
+            <div className="flex items-center gap-3 mt-1.5 text-xs">
+              <span className="text-gray-500">共 {stats.total} 篇</span>
+              {stats.ready > 0 && (
+                <span className="flex items-center gap-1 text-green-600">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                  {stats.ready} 篇已向量化
+                </span>
+              )}
+              {stats.processing > 0 && (
+                <span className="flex items-center gap-1 text-blue-600">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                  {stats.processing} 篇处理中
+                </span>
+              )}
+              {stats.pending > 0 && (
+                <span className="text-amber-600">{stats.pending} 篇等待处理</span>
+              )}
+              {stats.failed > 0 && (
+                <span className="text-red-500">{stats.failed} 篇失败</span>
+              )}
+              <span className="text-gray-400">{stats.total_chunks.toLocaleString()} 个向量切片</span>
+            </div>
+          )}
         </div>
         <Link
           href="/admin/knowledge/upload"
