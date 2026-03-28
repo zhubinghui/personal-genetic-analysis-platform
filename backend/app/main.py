@@ -27,19 +27,51 @@ logger = structlog.get_logger()
 async def lifespan(app: FastAPI):
     logger.info("服务启动", environment=settings.environment)
 
-    # 启动时重置卡在 processing 的文档（上次进程异常退出导致）
+    # 启动时重置卡住的文档 + 自动重新处理 pending 文档
     try:
-        from sqlalchemy import update
+        from sqlalchemy import select, update
         from app.models.knowledge import KnowledgeDocument
+
         async with AsyncSessionLocal() as db:
-            result = await db.execute(
+            # 1. 重置 processing → pending
+            reset_result = await db.execute(
                 update(KnowledgeDocument)
                 .where(KnowledgeDocument.status == "processing")
                 .values(status="pending", error_message="服务重启后自动重置")
             )
-            if result.rowcount > 0:
+            if reset_result.rowcount > 0:
                 await db.commit()
-                logger.info("重置了 %d 个卡住的文档为 pending", result.rowcount)
+                logger.info("重置了 %d 个卡住的文档为 pending", reset_result.rowcount)
+
+            # 2. 查找所有 pending 文档，自动触发后台向量化
+            pending_docs = (await db.execute(
+                select(KnowledgeDocument.id, KnowledgeDocument.file_key, KnowledgeDocument.file_type)
+                .where(KnowledgeDocument.status == "pending")
+            )).all()
+
+            if pending_docs:
+                logger.info("启动时发现 %d 个 pending 文档，开始自动向量化", len(pending_docs))
+                from app.services.knowledge_service import process_document_background
+                from app.services.storage_service import StorageService
+                storage = StorageService()
+                import asyncio as _aio
+                for doc in pending_docs:
+                    try:
+                        response = await _aio.to_thread(
+                            storage.client.get_object,
+                            settings.minio_bucket_knowledge,
+                            doc.file_key,
+                        )
+                        file_bytes = response.read()
+                        response.close()
+                        response.release_conn()
+                        # 创建后台任务（不 await，让它在后台运行）
+                        _aio.create_task(
+                            process_document_background(doc.id, file_bytes, doc.file_type, AsyncSessionLocal)
+                        )
+                    except Exception as e:
+                        logger.warning("自动向量化文档 %s 失败: %s", doc.id, e)
+
     except Exception as e:
         logger.warning("启动清理失败（首次部署可忽略）: %s", e)
 
