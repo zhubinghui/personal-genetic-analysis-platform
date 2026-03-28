@@ -12,12 +12,14 @@
   POST /auth/verify-code          — 验证验证码
   POST /auth/forgot-password      — 发送重置验证码
   POST /auth/reset-password       — 用验证码重置密码
+  POST /auth/wechat-miniapp/login — 微信小程序登录（code2session）
 """
 
 from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -274,3 +276,95 @@ async def _send_reset_background(channel: str, target: str) -> None:
         await send_reset_code(channel, target)
     except Exception:
         pass
+
+
+# ── 微信小程序登录 ───────────────────────────────────────────────
+
+class WechatMiniappLoginRequest(BaseModel):
+    code: str  # wx.login() 返回的临时 code
+
+
+@router.post("/wechat-miniapp/login", response_model=TokenResponse)
+async def wechat_miniapp_login(
+    body: WechatMiniappLoginRequest,
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """
+    微信小程序登录。
+
+    流程：
+      1. 小程序调用 wx.login() 拿到临时 code
+      2. 将 code POST 到本接口
+      3. 后端用 code 换取 openid（通过微信 jscode2session 接口）
+      4. 查找或自动创建本地用户
+      5. 返回 JWT token，后续请求与 Web 端完全一致
+    """
+    import httpx
+
+    if not settings.wechat_miniapp_app_id or not settings.wechat_miniapp_app_secret:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="微信小程序登录未配置，请联系管理员",
+        )
+
+    # 1. code → openid（调用腾讯官方接口，仅服务端可调用）
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(
+            "https://api.weixin.qq.com/sns/jscode2session",
+            params={
+                "appid": settings.wechat_miniapp_app_id,
+                "secret": settings.wechat_miniapp_app_secret,
+                "js_code": body.code,
+                "grant_type": "authorization_code",
+            },
+        )
+
+    wx_data = resp.json()
+    if "errcode" in wx_data and wx_data["errcode"] != 0:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"微信登录失败：{wx_data.get('errmsg', '未知错误')}",
+        )
+
+    openid: str = wx_data["openid"]
+    # unionid 在同一微信开放平台账号下跨小程序/公众号唯一（如已绑定则优先使用）
+    unionid: str | None = wx_data.get("unionid")
+
+    # 2. 查找已存在的小程序用户（以 wechat_miniapp + openid 为唯一键）
+    result = await db.execute(
+        select(User).where(
+            User.oauth_provider == "wechat_miniapp",
+            User.oauth_id == openid,
+        )
+    )
+    user = result.scalar_one_or_none()
+
+    # 如果有 unionid，尝试关联已有微信网页登录账号
+    if user is None and unionid:
+        result = await db.execute(
+            select(User).where(User.oauth_id == unionid)
+        )
+        user = result.scalar_one_or_none()
+        if user:
+            # 补充小程序 openid 到现有账号
+            user.wechat_openid = openid
+
+    # 3. 首次登录 → 自动创建账号（小程序用户无邮箱，用占位地址）
+    if user is None:
+        user = User(
+            email=f"wx_miniapp_{openid}@miniapp.local",
+            password_hash=None,
+            oauth_provider="wechat_miniapp",
+            oauth_id=openid,
+            wechat_openid=openid,
+            wechat_unionid=unionid,
+            email_verified=True,
+            email_verified_at=datetime.now(timezone.utc),
+        )
+        db.add(user)
+
+    await db.commit()
+    await db.refresh(user)
+
+    token = create_access_token({"sub": str(user.id)})
+    return TokenResponse(access_token=token, token_type="bearer")
