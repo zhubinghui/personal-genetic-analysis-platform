@@ -155,3 +155,27 @@ async def admin_token(client: AsyncClient, admin_user: dict) -> str:
     })
     assert res.status_code == 200
     return res.json()["access_token"]
+
+
+# ── 测试结束后清理测试用户 ────────────────────────
+
+def pytest_sessionfinish(session, exitstatus):
+    """测试会话结束后，清理所有 @example.com 测试用户。"""
+    import psycopg2
+    sync_url = os.environ.get(
+        "DATABASE_URL_SYNC",
+        "postgresql://app_user:changeme@postgres:5432/genetic_platform",
+    )
+    try:
+        conn = psycopg2.connect(sync_url)
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM audit_logs WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%%@example.com')")
+            cur.execute("DELETE FROM samples WHERE pseudonym_id IN (SELECT pseudonym_id FROM users WHERE email LIKE '%%@example.com')")
+            cur.execute("DELETE FROM users WHERE email LIKE '%%@example.com'")
+            deleted = cur.rowcount
+        conn.commit()
+        conn.close()
+        if deleted > 0:
+            print(f"\n[conftest cleanup] 清理了 {deleted} 个测试用户")
+    except Exception:
+        pass  # CI 环境可能无数据库，静默跳过
