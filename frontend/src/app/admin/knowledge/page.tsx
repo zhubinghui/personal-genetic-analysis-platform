@@ -228,6 +228,16 @@ export default function KnowledgeListPage() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    {doc.file_type === "pdf" && doc.status === "ready" && (
+                      <a
+                        href={`/api/v1/admin/knowledge/${doc.id}/preview`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs px-3 py-1.5 border border-brand-200 text-brand-600 rounded-lg hover:bg-brand-50 transition"
+                      >
+                        预览 PDF
+                      </a>
+                    )}
                     {(doc.status === "failed" || doc.status === "ready") && (
                       <button
                         onClick={() => handleReprocess(doc.id)}

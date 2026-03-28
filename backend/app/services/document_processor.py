@@ -56,6 +56,31 @@ def _split_into_chunks(text: str, page_number: int | None = None) -> list[TextCh
     return chunks
 
 
+@dataclass
+class PDFMetadata:
+    title: str | None = None
+    authors: str | None = None
+    subject: str | None = None
+    keywords: str | None = None
+
+
+def extract_pdf_metadata(file_bytes: bytes) -> PDFMetadata:
+    """从 PDF 元数据中提取标题、作者、关键词。"""
+    try:
+        import fitz
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
+        meta = doc.metadata or {}
+        doc.close()
+        return PDFMetadata(
+            title=meta.get("title") or None,
+            authors=meta.get("author") or None,
+            subject=meta.get("subject") or None,
+            keywords=meta.get("keywords") or None,
+        )
+    except Exception:
+        return PDFMetadata()
+
+
 def parse_pdf(file_bytes: bytes) -> list[TextChunk]:
     """解析 PDF 文件，按页提取文本并切分。"""
     try:

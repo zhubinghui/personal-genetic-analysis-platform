@@ -15,6 +15,7 @@ const NAV_ITEMS = [
 const ADMIN_ITEMS = [
   { href: "/admin/knowledge", label: "知识库", icon: "📚" },
   { href: "/admin/users", label: "用户管理", icon: "👥" },
+  { href: "/admin/settings", label: "设置", icon: "⚙️" },
 ];
 
 export default function Navbar() {

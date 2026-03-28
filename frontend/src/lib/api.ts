@@ -3,6 +3,7 @@ import type {
   AdminUser,
   AdminUserList,
   AnalysisResult,
+  ChatResponse,
   JobStatus,
   KnowledgeDocument,
   KnowledgeDocumentList,
@@ -211,6 +212,28 @@ export const trendApi = {
   get: () => apiFetch<TrendResponse>("/trends"),
 };
 
+// ── Chatbot 对话 ────────────────────────────────────────────────
+export const chatApi = {
+  send: (query: string, jobId?: string) =>
+    apiFetch<ChatResponse>("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, job_id: jobId }),
+    }),
+};
+
+// ── 管理员系统设置 ──────────────────────────────────────────────
+export const settingsApi = {
+  getLLM: () => apiFetch<Record<string, unknown>>("/admin/settings/llm"),
+  updateLLM: (data: Record<string, unknown>) =>
+    apiFetch<{ message: string }>("/admin/settings/llm", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  testLLM: () => apiFetch<{ status: string; response: string; provider: string }>("/admin/settings/llm/test", { method: "POST" }),
+};
+
 // ── 管理员用户管理 ──────────────────────────────────────────────
 export const adminUserApi = {
   list: (skip = 0, limit = 50) =>
@@ -275,6 +298,18 @@ export const knowledgeApi = {
 
   reprocess: (docId: string) =>
     apiFetch<KnowledgeDocument>(`/admin/knowledge/${docId}/reprocess`, { method: "POST" }),
+
+  uploadBatch: (files: File[]) => {
+    const form = new FormData();
+    files.forEach((f) => form.append("files", f));
+    return apiFetch<{ total: number; success: number; files: { filename: string; status: string; doc_id?: string; title?: string; error?: string }[] }>(
+      "/admin/knowledge/upload-batch",
+      { method: "POST", body: form },
+    );
+  },
+
+  previewUrl: (docId: string) =>
+    `${API_BASE}/api/v1/admin/knowledge/${docId}/preview?token=${Cookies.get("access_token") ?? ""}`,
 
   search: (query: string, topK = 5, scoreThreshold = 0.3) =>
     apiFetch<SearchResponse>("/admin/knowledge/search", {
