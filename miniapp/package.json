@@ -1,0 +1,33 @@
+{
+  "name": "genetic-platform-miniapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "个人基因抗衰老分析平台 — 微信小程序",
+  "scripts": {
+    "dev:weapp": "taro build --type weapp --watch",
+    "build:weapp": "taro build --type weapp",
+    "dev:h5": "taro build --type h5 --watch",
+    "build:h5": "taro build --type h5",
+    "lint": "eslint --ext .ts,.tsx src/",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tarojs/components": "4.x",
+    "@tarojs/plugin-framework-react": "4.x",
+    "@tarojs/react": "4.x",
+    "@tarojs/runtime": "4.x",
+    "@tarojs/taro": "4.x",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "taro-ui": "^3.0.0-alpha.3"
+  },
+  "devDependencies": {
+    "@tarojs/cli": "4.x",
+    "@tarojs/webpack5-runner": "4.x",
+    "@types/react": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

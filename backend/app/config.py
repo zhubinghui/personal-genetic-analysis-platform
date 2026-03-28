@@ -54,8 +54,10 @@ class Settings(BaseSettings):
     github_client_secret: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
-    wechat_app_id: str = ""
-    wechat_app_secret: str = ""
+    wechat_app_id: str = ""              # 微信公众号 / 网页登录 AppID
+    wechat_app_secret: str = ""          # 微信公众号 / 网页登录 AppSecret
+    wechat_miniapp_app_id: str = ""      # 微信小程序独立 AppID（与公众号不同）
+    wechat_miniapp_app_secret: str = ""  # 微信小程序 AppSecret
     oauth_redirect_base: str = "http://localhost:8000"
 
     # 应用
