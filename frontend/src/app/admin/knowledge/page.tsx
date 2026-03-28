@@ -42,15 +42,19 @@ export default function KnowledgeListPage() {
     score: number;
   }> | null>(null);
   const [searching, setSearching] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   // 认证失败标记：阻止轮询继续刷 401
   const [authFailed, setAuthFailed] = useState(false);
 
-  const loadDocs = useCallback(async () => {
+  const loadDocs = useCallback(async (p: number = 1) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await knowledgeApi.list({ limit: 50 });
+      const skip = (p - 1) * pageSize;
+      const res = await knowledgeApi.list({ skip, limit: pageSize });
       setDocs(res.items);
       setTotal(res.total);
       setAuthFailed(false);
@@ -67,13 +71,12 @@ export default function KnowledgeListPage() {
   }, []);
 
   useEffect(() => {
-    loadDocs();
-    // 每 10 秒轮询一次，刷新处理中文档的状态（认证失败时停止轮询）
+    loadDocs(page);
     const timer = setInterval(() => {
-      if (!authFailed) loadDocs();
+      if (!authFailed) loadDocs(page);
     }, 10_000);
     return () => clearInterval(timer);
-  }, [loadDocs, authFailed]);
+  }, [loadDocs, authFailed, page]);
 
   const handleDelete = async (docId: string) => {
     if (!confirm("确定要删除该文献吗？此操作不可撤销。")) return;
@@ -260,6 +263,55 @@ export default function KnowledgeListPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 分页 */}
+      {!loading && !error && totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-400">
+            第 {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} 篇，共 {total} 篇
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-600
+                         hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              上一页
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((item, idx) =>
+                item === "..." ? (
+                  <span key={`e${idx}`} className="px-2 text-gray-400 text-sm">...</span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setPage(item as number)}
+                    className={`w-8 h-8 text-sm rounded-lg transition ${
+                      page === item ? "bg-brand-600 text-white font-medium" : "text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg text-gray-600
+                         hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              下一页
+            </button>
+          </div>
         </div>
       )}
     </div>
