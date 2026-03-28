@@ -191,6 +191,21 @@ export const reportApi = {
     `${API_BASE}/api/v1/reports/${jobId}/pdf?token=${Cookies.get("access_token") ?? ""}`,
 };
 
+// ── OAuth 第三方登录 ────────────────────────────────────────────
+export const oauthApi = {
+  providers: () =>
+    apiFetch<{ providers: { name: string; configured: boolean; label: string }[] }>(
+      "/auth/oauth/providers",
+      { auth: false },
+    ),
+
+  getAuthorizeUrl: (provider: string) =>
+    apiFetch<{ authorize_url: string; state: string }>(
+      `/auth/oauth/${provider}/authorize`,
+      { auth: false },
+    ),
+};
+
 // ── 纵向对比 ───────────────────────────────────────────────────
 export const trendApi = {
   get: () => apiFetch<TrendResponse>("/trends"),

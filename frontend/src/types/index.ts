@@ -4,6 +4,8 @@ export interface User {
   phone: string | null;
   is_admin: boolean;
   email_verified: boolean;
+  oauth_provider: string | null;
+  avatar_url: string | null;
   consent_version: string | null;
   consent_given_at: string | null;
   created_at: string;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi, ApiError } from "@/lib/api";
+import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -136,6 +137,10 @@ export default function LoginPage() {
               没有账号？{" "}
               <Link href="/register" className="text-brand-600 hover:underline font-medium">立即注册</Link>
             </span>
+          </div>
+
+          <div className="mt-6">
+            <SocialLoginButtons />
           </div>
           <p className="text-center text-xs text-gray-400 mt-8">
             本平台仅提供健康管理参考，不构成医疗诊断建议。

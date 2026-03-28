@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi, ApiError } from "@/lib/api";
+import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 
 function getPasswordStrength(pw: string): { level: number; label: string; color: string } {
   if (pw.length === 0) return { level: 0, label: "", color: "bg-gray-200" };
@@ -207,6 +208,10 @@ export default function RegisterPage() {
             已有账号？{" "}
             <Link href="/login" className="text-brand-600 hover:underline font-medium">返回登录</Link>
           </p>
+
+          <div className="mt-6">
+            <SocialLoginButtons />
+          </div>
         </div>
       </div>
     </div>

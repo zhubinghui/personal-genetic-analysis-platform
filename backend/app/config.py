@@ -49,6 +49,15 @@ class Settings(BaseSettings):
     verify_code_expire_minutes: int = 10
     password_reset_expire_minutes: int = 30
 
+    # OAuth 第三方登录
+    github_client_id: str = ""
+    github_client_secret: str = ""
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    wechat_app_id: str = ""
+    wechat_app_secret: str = ""
+    oauth_redirect_base: str = "http://localhost:8000"
+
     # 应用
     environment: str = "development"
     log_level: str = "INFO"

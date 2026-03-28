@@ -15,7 +15,12 @@ class User(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)  # OAuth 用户可无密码
+
+    # 第三方登录
+    oauth_provider: Mapped[str | None] = mapped_column(String(20), nullable=True)  # github/google/wechat
+    oauth_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     # 关键隐私设计：pseudonym_id 是基因数据侧唯一使用的标识符
     # 永远不将 users.id 暴露给分析层

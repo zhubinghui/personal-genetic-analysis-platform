@@ -28,6 +28,8 @@ class UserOut(BaseModel):
     phone: str | None = None
     is_admin: bool = False
     email_verified: bool = False
+    oauth_provider: str | None = None
+    avatar_url: str | None = None
     consent_version: str | None
     consent_given_at: datetime | None
     created_at: datetime

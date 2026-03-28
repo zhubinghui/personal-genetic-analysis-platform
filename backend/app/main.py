@@ -10,6 +10,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.samples import router as samples_router
 from app.api.v1.jobs import router as jobs_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.oauth import router as oauth_router
 from app.api.v1.admin.knowledge import router as admin_knowledge_router
 from app.api.v1.admin.users import router as admin_users_router
 from app.api.v1.trends import router as trends_router
@@ -87,6 +88,7 @@ async def _write_audit_log(request: Request, status_code: int) -> None:
 
 # ── 路由注册 ────────────────────────────────────────────────
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(oauth_router, prefix="/api/v1")
 app.include_router(samples_router, prefix="/api/v1")
 app.include_router(jobs_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
