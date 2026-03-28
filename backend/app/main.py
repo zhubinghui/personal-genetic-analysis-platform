@@ -26,6 +26,23 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("服务启动", environment=settings.environment)
+
+    # 启动时重置卡在 processing 的文档（上次进程异常退出导致）
+    try:
+        from sqlalchemy import update
+        from app.models.knowledge import KnowledgeDocument
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                update(KnowledgeDocument)
+                .where(KnowledgeDocument.status == "processing")
+                .values(status="pending", error_message="服务重启后自动重置")
+            )
+            if result.rowcount > 0:
+                await db.commit()
+                logger.info("重置了 %d 个卡住的文档为 pending", result.rowcount)
+    except Exception as e:
+        logger.warning("启动清理失败（首次部署可忽略）: %s", e)
+
     yield
     logger.info("服务关闭")
 

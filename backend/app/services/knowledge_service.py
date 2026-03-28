@@ -92,13 +92,22 @@ async def process_document_background(
 
         except Exception as e:
             logger.error("文档 %s 处理失败: %s", document_id, e)
-            await db.rollback()
-            await db.execute(
-                update(KnowledgeDocument)
-                .where(KnowledgeDocument.id == document_id)
-                .values(status="failed", error_message=str(e)[:500])
-            )
-            await db.commit()
+            # 确保即使 rollback 失败也能标记为 failed
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+            try:
+                # 使用新的 session 确保状态更新成功
+                async with db_session_factory() as db2:
+                    await db2.execute(
+                        update(KnowledgeDocument)
+                        .where(KnowledgeDocument.id == document_id)
+                        .values(status="failed", error_message=str(e)[:500])
+                    )
+                    await db2.commit()
+            except Exception as e2:
+                logger.error("文档 %s 状态更新也失败: %s", document_id, e2)
 
 
 # ── 查询 ────────────────────────────────────────────────────
