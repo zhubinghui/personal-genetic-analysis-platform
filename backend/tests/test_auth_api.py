@@ -1,33 +1,35 @@
 """认证 API 集成测试"""
 
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
 
-@pytest.fixture
-def unique_email():
-    import uuid
+def _unique_email() -> str:
     return f"auth_test_{uuid.uuid4().hex[:8]}@example.com"
 
 
 class TestRegister:
-    async def test_register_success(self, client: AsyncClient, unique_email: str):
+    async def test_register_success(self, client: AsyncClient):
+        email = _unique_email()
         res = await client.post("/api/v1/auth/register", json={
-            "email": unique_email,
+            "email": email,
             "password": "StrongPass123!",
         })
         assert res.status_code == 201
         data = res.json()
-        assert data["email"] == unique_email
+        assert data["email"] == email
         assert "id" in data
 
-    async def test_register_duplicate_email(self, client: AsyncClient, unique_email: str):
+    async def test_register_duplicate_email(self, client: AsyncClient):
+        email = _unique_email()
         await client.post("/api/v1/auth/register", json={
-            "email": unique_email,
+            "email": email,
             "password": "StrongPass123!",
         })
         res = await client.post("/api/v1/auth/register", json={
-            "email": unique_email,
+            "email": email,
             "password": "AnotherPass123!",
         })
         assert res.status_code == 400
@@ -42,13 +44,14 @@ class TestRegister:
 
 
 class TestLogin:
-    async def test_login_success(self, client: AsyncClient, unique_email: str):
+    async def test_login_success(self, client: AsyncClient):
+        email = _unique_email()
         await client.post("/api/v1/auth/register", json={
-            "email": unique_email,
+            "email": email,
             "password": "MyPass123!",
         })
         res = await client.post("/api/v1/auth/login", json={
-            "email": unique_email,
+            "email": email,
             "password": "MyPass123!",
         })
         assert res.status_code == 200
@@ -57,13 +60,14 @@ class TestLogin:
         assert data["token_type"] == "bearer"
         assert data["expires_in"] > 0
 
-    async def test_login_wrong_password(self, client: AsyncClient, unique_email: str):
+    async def test_login_wrong_password(self, client: AsyncClient):
+        email = _unique_email()
         await client.post("/api/v1/auth/register", json={
-            "email": unique_email,
+            "email": email,
             "password": "CorrectPass!",
         })
         res = await client.post("/api/v1/auth/login", json={
-            "email": unique_email,
+            "email": email,
             "password": "WrongPass!",
         })
         assert res.status_code == 401
@@ -87,7 +91,7 @@ class TestMe:
 
     async def test_me_no_token(self, client: AsyncClient):
         res = await client.get("/api/v1/auth/me")
-        assert res.status_code == 403  # HTTPBearer returns 403 when missing
+        assert res.status_code == 403
 
     async def test_me_invalid_token(self, client: AsyncClient):
         res = await client.get(
