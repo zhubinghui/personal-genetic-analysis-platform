@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useDropzone } from "react-dropzone";
 import { sampleApi, ApiError } from "@/lib/api";
 
@@ -69,7 +70,15 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800">上传甲基化数据</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="text-brand-600 hover:underline text-sm">
+              ← 我的分析
+            </Link>
+            <span className="text-gray-300">/</span>
+            <h1 className="text-2xl font-bold text-gray-800">上传甲基化数据</h1>
+          </div>
+        </div>
 
         {/* 上传模式 */}
         <div className="bg-white rounded-xl border p-5 space-y-4">

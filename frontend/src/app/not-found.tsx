@@ -15,7 +15,7 @@ export default function NotFound() {
             href="/dashboard"
             className="px-4 py-2 bg-brand-600 text-white rounded-xl text-sm hover:bg-brand-700 transition shadow-sm"
           >
-            返回控制台
+            我的分析
           </Link>
           <Link
             href="/login"

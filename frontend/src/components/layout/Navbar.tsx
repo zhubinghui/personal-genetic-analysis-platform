@@ -7,7 +7,7 @@ import { authApi } from "@/lib/api";
 import type { User } from "@/types";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "控制台", icon: "📊" },
+  { href: "/dashboard", label: "我的分析", icon: "📊" },
   { href: "/trends", label: "历史对比", icon: "📈" },
   { href: "/upload", label: "上传数据", icon: "📤" },
 ];

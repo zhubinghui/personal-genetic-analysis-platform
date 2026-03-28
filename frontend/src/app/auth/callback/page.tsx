@@ -26,7 +26,7 @@ export default function OAuthCallbackPage() {
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
       });
-      // 跳转到控制台
+      // 跳转到我的分析
       router.push("/dashboard");
     } else {
       setError("登录回调参数缺失");
