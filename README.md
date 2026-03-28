@@ -277,7 +277,66 @@ VERIFY_CODE_EXPIRE_MINUTES=10
 
 > **注意**：未配置 Resend API Key 时，验证码发送会被静默跳过，新注册用户将无法完成验证。建议部署前务必配置至少一个通道。
 
+## 第三方登录配置
+
+支持 GitHub / Google / 微信三种 OAuth2 登录，按需配置。未配置的平台按钮不会显示。
+
+### GitHub
+
+```bash
+# 1. GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
+# 2. Homepage URL: http://localhost:3000
+# 3. Callback URL: http://localhost:8000/api/v1/auth/oauth/github/callback
+# 4. 添加到 .env：
+
+GITHUB_CLIENT_ID=Ov23lixxxxxxxxxx
+GITHUB_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### Google
+
+```bash
+# 1. Google Cloud Console → APIs & Services → Credentials → Create OAuth 2.0 Client
+# 2. Authorized redirect URI: http://localhost:8000/api/v1/auth/oauth/google/callback
+# 3. 添加到 .env：
+
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
+```
+
+### 微信（需企业认证）
+
+```bash
+# 1. 注册微信开放平台: https://open.weixin.qq.com
+# 2. 完成企业认证（300 元/年）
+# 3. 创建网站应用，获取 AppID
+# 4. 添加到 .env：
+
+WECHAT_APP_ID=wxxxxxxxxxxx
+WECHAT_APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+```bash
+# 通用设置
+OAUTH_REDIRECT_BASE=http://localhost:8000   # 生产环境改为实际域名
+```
+
 ## 更新日志
+
+---
+
+### v0.2.2 — 2026.03.28
+
+---
+
+#### OAuth2 第三方登录
+- 可插拔 Provider 架构：新增平台只需实现一个类 + 注册到字典
+- GitHub 登录：即时可用，Settings → Developer settings → OAuth Apps
+- Google 登录：即时可用，Google Cloud Console → OAuth 2.0
+- 微信登录：代码已就绪，需企业认证通过后启用
+- 自动账号关联：同一邮箱的三方账号与本地账号自动绑定
+- OAuth 用户免邮箱验证（信任第三方平台）
+- 登录/注册页自动检测已配置的 Provider 并显示按钮
 
 ---
 
