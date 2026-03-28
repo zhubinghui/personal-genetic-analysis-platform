@@ -1,8 +1,7 @@
 """
 共享测试夹具
 
-策略：每个测试使用独立的 AsyncSession（不共享连接），
-用 UUID 保证数据唯一性，避免 asyncpg 并发冲突。
+关键：engine 在 session 级 fixture 内创建，确保与 pytest-asyncio 使用同一事件循环。
 """
 
 import base64
@@ -15,47 +14,53 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.config import settings
 from app.database import Base, get_db
 from app.main import app
 from app.models.user import User
 from app.utils.auth import create_access_token, hash_password
 
-# ── 测试数据库引擎 ─────────────────────────────────────────
+TEST_DB_URL = os.environ.get(
+    "TEST_DATABASE_URL",
+    os.environ.get(
+        "DATABASE_URL",
+        "postgresql+asyncpg://app_user:changeme@postgres:5432/genetic_platform",
+    ),
+)
 
-TEST_DB_URL = os.environ.get("TEST_DATABASE_URL", settings.database_url)
-_test_engine = create_async_engine(TEST_DB_URL, echo=False, pool_size=5, max_overflow=10)
-_TestSession = async_sessionmaker(_test_engine, class_=AsyncSession, expire_on_commit=False)
 
-
-# ── 数据库生命周期 ────────────────────────────────────────
+# ── 数据库 engine + session factory（session 级别，与事件循环一致）──
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
-async def _setup_db():
-    """整个测试会话只建/拆一次表。"""
-    async with _test_engine.begin() as conn:
+async def _db_engine():
+    engine = create_async_engine(TEST_DB_URL, echo=False, pool_size=5, max_overflow=10)
+    async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
-    yield
-    async with _test_engine.begin() as conn:
+    yield engine
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    await _test_engine.dispose()
+    await engine.dispose()
 
 
-# ── DB session（独立连接）──────────────────────────────────
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def _session_factory(_db_engine):
+    return async_sessionmaker(_db_engine, class_=AsyncSession, expire_on_commit=False)
+
+
+# ── DB session ──────────────────────────────────────────────
 
 @pytest_asyncio.fixture
-async def db(_setup_db) -> AsyncSession:
-    async with _TestSession() as session:
+async def db(_session_factory) -> AsyncSession:
+    async with _session_factory() as session:
         yield session
 
 
 # ── FastAPI 测试客户端 ────────────────────────────────────
 
 @pytest_asyncio.fixture
-async def client(_setup_db) -> AsyncClient:
+async def client(_session_factory) -> AsyncClient:
     async def _override():
-        async with _TestSession() as session:
+        async with _session_factory() as session:
             yield session
 
     app.dependency_overrides[get_db] = _override
@@ -73,9 +78,8 @@ def encryption_key() -> bytes:
 
 
 @pytest_asyncio.fixture
-async def test_user(_setup_db) -> User:
-    """创建普通用户并 commit（对所有 session 可见）。"""
-    async with _TestSession() as session:
+async def test_user(_session_factory) -> User:
+    async with _session_factory() as session:
         user = User(
             email=f"test_{uuid.uuid4().hex[:8]}@example.com",
             password_hash=hash_password("TestPass123!"),
@@ -87,9 +91,8 @@ async def test_user(_setup_db) -> User:
 
 
 @pytest_asyncio.fixture
-async def admin_user(_setup_db) -> User:
-    """创建管理员用户并 commit（对所有 session 可见）。"""
-    async with _TestSession() as session:
+async def admin_user(_session_factory) -> User:
+    async with _session_factory() as session:
         user = User(
             email=f"admin_{uuid.uuid4().hex[:8]}@example.com",
             password_hash=hash_password("AdminPass123!"),
