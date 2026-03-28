@@ -136,6 +136,44 @@ export interface SearchResponse {
   results: SearchResultChunk[];
 }
 
+// ── 纵向对比 ────────────────────────────────────────────
+
+export interface TrendPoint {
+  sample_id: string;
+  job_id: string;
+  uploaded_at: string;
+  chronological_age: number | null;
+  horvath_age: number | null;
+  grimage_age: number | null;
+  phenoage_age: number | null;
+  dunedinpace: number | null;
+  biological_age_acceleration: number | null;
+  dimension_summary: Record<string, number | null>;
+}
+
+export interface TrendResponse {
+  points: TrendPoint[];
+  total_samples: number;
+}
+
+// ── 同龄对标 ────────────────────────────────────────────
+
+export interface BenchmarkMetric {
+  value: number | null;
+  percentile: number | null;
+  cohort_mean: number | null;
+  cohort_std: number | null;
+}
+
+export interface BenchmarkData {
+  age_group: string;
+  cohort_size: number;
+  dunedinpace: BenchmarkMetric;
+  horvath_acceleration: BenchmarkMetric;
+  grimage_acceleration: BenchmarkMetric;
+  phenoage_acceleration: BenchmarkMetric;
+}
+
 export interface ReportData {
   job_id: string;
   generated_at: string;
@@ -155,5 +193,6 @@ export interface ReportData {
     n_probes_before: number | null;
     n_probes_after: number | null;
   };
+  benchmark: BenchmarkData | null;
   pdf_available?: boolean;
 }

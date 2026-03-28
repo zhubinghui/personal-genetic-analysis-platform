@@ -53,12 +53,20 @@ export default function DashboardPage() {
       <main className="max-w-4xl mx-auto py-10 px-4 space-y-8">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-800">我的分析记录</h2>
-          <Link
-            href="/upload"
-            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm transition"
-          >
-            上传新数据
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/trends"
+              className="px-4 py-2 border border-brand-600 text-brand-600 rounded-lg hover:bg-brand-50 text-sm transition"
+            >
+              📈 历史对比
+            </Link>
+            <Link
+              href="/upload"
+              className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm transition"
+            >
+              上传新数据
+            </Link>
+          </div>
         </div>
 
         {samples.length === 0 ? (

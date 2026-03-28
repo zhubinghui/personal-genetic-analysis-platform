@@ -92,6 +92,7 @@ async def get_report(
             "n_probes_before": report.qc_summary.n_probes_before,
             "n_probes_after": report.qc_summary.n_probes_after,
         },
+        "benchmark": report.benchmark,
         "pdf_available": report.pdf_available,
     }
 

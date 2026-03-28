@@ -9,6 +9,7 @@ import AgeClockGauge from "@/components/charts/AgeClockGauge";
 import DunedinPaceRadar from "@/components/charts/DunedinPaceRadar";
 import AgingDimensionBars from "@/components/charts/AgingDimensionBars";
 import RecommendationCard from "@/components/report/RecommendationCard";
+import CohortBenchmark from "@/components/report/CohortBenchmark";
 import type { ReportData } from "@/types";
 
 export default function ResultsPage() {
@@ -147,6 +148,9 @@ export default function ResultsPage() {
             </div>
           ))}
         </div>
+
+        {/* 同龄人群对标 */}
+        {report.benchmark && <CohortBenchmark benchmark={report.benchmark} />}
 
         {/* 19 维度条形图 */}
         {dimensions && <AgingDimensionBars dimensions={dimensions} />}
