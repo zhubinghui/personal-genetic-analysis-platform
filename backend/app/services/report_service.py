@@ -88,6 +88,13 @@ class ReportService:
             dims = ar.dunedinpace_dimensions or {}
             recommendations = self.rec_engine.generate(dims, ar.dunedinpace)
 
+        # RAG 整合：从知识库检索相关文献附加到每条推荐
+        try:
+            from app.services.rag_service import enrich_recommendations
+            await enrich_recommendations(db, recommendations)
+        except Exception:
+            pass  # 知识库查询失败不影响报告生成
+
         clocks = ClockResults(
             horvath_age=ar.horvath_age,
             grimage_age=ar.grimage_age,
@@ -233,6 +240,32 @@ class ReportService:
                         for pmid, url in zip(rec.pmids, rec.pubmed_urls)
                     )
                     story.append(Paragraph(f"参考文献：{refs}", rec_style))
+
+                # 知识库文献支撑
+                if rec.literature_references:
+                    lit_style = ParagraphStyle(
+                        f"Lit{i}",
+                        parent=styles["Normal"],
+                        leftIndent=16,
+                        fontSize=7.5,
+                        textColor=colors.HexColor("#4b5563"),
+                        spaceAfter=2,
+                    )
+                    story.append(Paragraph(
+                        "<i>知识库文献支撑：</i>",
+                        ParagraphStyle("LitH", parent=lit_style, textColor=colors.HexColor("#059669")),
+                    ))
+                    for lit in rec.literature_references:
+                        page_str = f" (p.{lit.page_number})" if lit.page_number else ""
+                        score_pct = f"{lit.relevance_score * 100:.0f}%"
+                        # 截断 excerpt 以免撑爆 PDF
+                        excerpt = lit.excerpt[:200] + "..." if len(lit.excerpt) > 200 else lit.excerpt
+                        story.append(Paragraph(
+                            f"<b>{lit.document_title}</b>{page_str} "
+                            f"[相关度 {score_pct}]  {excerpt}",
+                            lit_style,
+                        ))
+
                 story.append(Spacer(1, 0.2 * cm))
 
         # 免责声明

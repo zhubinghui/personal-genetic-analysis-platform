@@ -13,6 +13,15 @@ DATA_FILE = Path(__file__).parent.parent / "data" / "recommendations.json"
 
 
 @dataclass
+class LiteratureReference:
+    """知识库文献引用（由 RAG 服务填充）"""
+    document_title: str
+    excerpt: str            # chunk_text 截取前 300 字符
+    page_number: int | None
+    relevance_score: float  # 余弦相似度 0~1
+
+
+@dataclass
 class Recommendation:
     dimension: str
     dimension_score: float
@@ -24,6 +33,7 @@ class Recommendation:
     category: str  # "diet", "exercise", "supplement", "lifestyle"
     timeframe_weeks: int
     pubmed_urls: list[str] = field(default_factory=list)
+    literature_references: list[LiteratureReference] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.pubmed_urls = [
