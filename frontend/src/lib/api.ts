@@ -108,6 +108,33 @@ export const authApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
     }),
+
+  verifyEmail: (token: string) =>
+    apiFetch<{ message: string; verified: boolean }>(`/auth/verify-email?token=${token}`, { auth: false }),
+
+  resendVerification: (email: string) =>
+    apiFetch<{ message: string }>("/auth/resend-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+      auth: false,
+    }),
+
+  forgotPassword: (email: string) =>
+    apiFetch<{ message: string }>("/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+      auth: false,
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    apiFetch<{ message: string }>("/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, new_password: newPassword }),
+      auth: false,
+    }),
 };
 
 // ── 样本上传 ─────────────────────────────────────────────────

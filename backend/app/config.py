@@ -34,6 +34,16 @@ class Settings(BaseSettings):
     jwt_access_expire_minutes: int = 60
     jwt_refresh_expire_days: int = 30
 
+    # SMTP 邮件
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_from_name: str = "基因抗衰老分析平台"
+    email_verify_expire_hours: int = 24
+    password_reset_expire_minutes: int = 30
+
     # 应用
     environment: str = "development"
     log_level: str = "INFO"

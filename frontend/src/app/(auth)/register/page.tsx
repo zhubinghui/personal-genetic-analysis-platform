@@ -31,6 +31,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
 
   const pwStrength = useMemo(() => getPasswordStrength(password), [password]);
@@ -50,14 +51,42 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await authApi.register(email, password);
-      await authApi.login(email, password);
-      router.push("/consent");
+      setRegistered(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "注册失败");
     } finally {
       setLoading(false);
     }
   };
+
+  if (registered) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
+        <div className="w-full max-w-sm text-center space-y-4">
+          <div className="text-5xl">📧</div>
+          <h1 className="text-xl font-bold text-gray-800">注册成功！请验证邮箱</h1>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            我们已向 <strong>{email}</strong> 发送了一封验证邮件。<br />
+            请点击邮件中的链接完成验证后登录。
+          </p>
+          <p className="text-xs text-gray-400">
+            没有收到邮件？请检查垃圾邮件文件夹，或
+            <button
+              onClick={async () => {
+                try { await authApi.resendVerification(email); alert("验证邮件已重新发送"); } catch {}
+              }}
+              className="text-brand-600 hover:underline"
+            >
+              重新发送
+            </button>
+          </p>
+          <Link href="/login" className="inline-block text-brand-600 hover:underline text-sm">
+            前往登录
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">

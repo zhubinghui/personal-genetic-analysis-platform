@@ -20,7 +20,11 @@ export default function LoginPage() {
       await authApi.login(email, password);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "登录失败");
+      if (err instanceof ApiError && err.status === 403) {
+        setError("UNVERIFIED");
+      } else {
+        setError(err instanceof ApiError ? err.message : "登录失败");
+      }
     } finally {
       setLoading(false);
     }
@@ -88,11 +92,32 @@ export default function LoginPage() {
               />
             </div>
 
-            {error && (
+            {error === "UNVERIFIED" ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm space-y-2">
+                <p className="text-amber-700 font-medium">请先验证邮箱</p>
+                <p className="text-amber-600 text-xs">注册时已发送验证邮件到您的邮箱，请查看收件箱（含垃圾邮件）。</p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await authApi.resendVerification(email);
+                      setError("RESENT");
+                    } catch {}
+                  }}
+                  className="text-xs text-brand-600 hover:underline"
+                >
+                  重新发送验证邮件
+                </button>
+              </div>
+            ) : error === "RESENT" ? (
+              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-sm text-green-600">
+                验证邮件已重新发送，请查看收件箱
+              </div>
+            ) : error ? (
               <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-sm text-red-600">
                 {error}
               </div>
-            )}
+            ) : null}
 
             <button
               type="submit" disabled={loading}
@@ -103,10 +128,15 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            没有账号？{" "}
-            <Link href="/register" className="text-brand-600 hover:underline font-medium">立即注册</Link>
-          </p>
+          <div className="flex items-center justify-between mt-6 text-sm text-gray-500">
+            <Link href="/forgot-password" className="hover:text-brand-600 transition">
+              忘记密码？
+            </Link>
+            <span>
+              没有账号？{" "}
+              <Link href="/register" className="text-brand-600 hover:underline font-medium">立即注册</Link>
+            </span>
+          </div>
           <p className="text-center text-xs text-gray-400 mt-8">
             本平台仅提供健康管理参考，不构成医疗诊断建议。
           </p>
