@@ -31,7 +31,7 @@ export const GLOSSARY: Record<string, { label: string; tip: string }> = {
   },
   age_acceleration: {
     label: "年龄加速值",
-    tip: "生物学年龄 − 实际年龄。正值表示身体比实际年龄"老"，负值表示比实际年龄"年轻"。",
+    tip: "生物学年龄 - 实际年龄。正值表示身体比实际年龄更老，负值表示比实际年龄更年轻。",
   },
   dna_methylation: {
     label: "DNA 甲基化",
@@ -103,6 +103,6 @@ export const GLOSSARY: Record<string, { label: string; tip: string }> = {
   beta_csv: { label: "Beta 值 CSV", tip: "预处理后的甲基化数据矩阵。每个值在 0-1 之间，0 表示完全未甲基化，1 表示完全甲基化。" },
 
   // ── 百分位对标 ──────────────────────────────
-  percentile: { label: "百分位排名", tip: "您的指标在同龄组中的相对位置。例如"优于 70%"表示您的衰老状态好于同组中 70% 的人。" },
+  percentile: { label: "百分位排名", tip: "您的指标在同龄组中的相对位置。例如【优于 70%】表示您的衰老状态好于同组中 70% 的人。" },
   cohort: { label: "对标人群", tip: "平台内相同年龄段（每 5 岁一组）的所有已完成分析样本。样本不足 5 人时使用全年龄段数据。" },
 };
