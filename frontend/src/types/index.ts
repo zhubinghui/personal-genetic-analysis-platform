@@ -71,6 +71,13 @@ export interface AnalysisResult {
   computed_at: string;
 }
 
+export interface LiteratureReference {
+  document_title: string;
+  excerpt: string;
+  page_number: number | null;
+  relevance_score: number;
+}
+
 export interface Recommendation {
   dimension: string;
   dimension_score: number;
@@ -82,6 +89,7 @@ export interface Recommendation {
   pubmed_urls: string[];
   category: "diet" | "exercise" | "supplement" | "lifestyle";
   timeframe_weeks: number;
+  literature_references: LiteratureReference[];
 }
 
 // ── 知识库（管理员）────────────────────────────────────────

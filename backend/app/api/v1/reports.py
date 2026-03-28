@@ -75,6 +75,15 @@ async def get_report(
                 "pubmed_urls": r.pubmed_urls,
                 "category": r.category,
                 "timeframe_weeks": r.timeframe_weeks,
+                "literature_references": [
+                    {
+                        "document_title": ref.document_title,
+                        "excerpt": ref.excerpt,
+                        "page_number": ref.page_number,
+                        "relevance_score": ref.relevance_score,
+                    }
+                    for ref in r.literature_references
+                ],
             }
             for r in report.recommendations
         ],

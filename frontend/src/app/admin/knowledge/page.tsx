@@ -42,6 +42,9 @@ export default function KnowledgeListPage() {
   }> | null>(null);
   const [searching, setSearching] = useState(false);
 
+  // 认证失败标记：阻止轮询继续刷 401
+  const [authFailed, setAuthFailed] = useState(false);
+
   const loadDocs = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -49,8 +52,14 @@ export default function KnowledgeListPage() {
       const res = await knowledgeApi.list({ limit: 50 });
       setDocs(res.items);
       setTotal(res.total);
+      setAuthFailed(false);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "加载失败");
+      if (e instanceof ApiError && e.status === 401) {
+        setAuthFailed(true);
+        setError("登录已过期，请重新登录");
+      } else {
+        setError(e instanceof ApiError ? e.message : "加载失败");
+      }
     } finally {
       setLoading(false);
     }
@@ -58,12 +67,12 @@ export default function KnowledgeListPage() {
 
   useEffect(() => {
     loadDocs();
-    // 每 10 秒轮询一次，刷新处理中文档的状态
+    // 每 10 秒轮询一次，刷新处理中文档的状态（认证失败时停止轮询）
     const timer = setInterval(() => {
-      loadDocs();
+      if (!authFailed) loadDocs();
     }, 10_000);
     return () => clearInterval(timer);
-  }, [loadDocs]);
+  }, [loadDocs, authFailed]);
 
   const handleDelete = async (docId: string) => {
     if (!confirm("确定要删除该文献吗？此操作不可撤销。")) return;
