@@ -3,13 +3,14 @@
 
 功能：
   - 文档 CRUD（创建 / 查询 / 删除）
-  - 后台异步处理（解析 + 嵌入）
+  - 后台异步处理（独立线程池，不阻塞 API）
   - pgvector 语义相似度搜索
 """
 
 import asyncio
 import logging
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
 from sqlalchemy import delete, func, select, update
@@ -18,12 +19,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.knowledge import DocumentChunk, KnowledgeDocument
 from app.schemas.knowledge import SearchResultChunk
 from app.services.document_processor import parse_document
-from app.services.embedding_service import embed_query, embed_texts
+from app.services.embedding_service import embed_query, embed_texts_sync
 
 if TYPE_CHECKING:
     pass
 
 logger = logging.getLogger(__name__)
+
+# 向量化专用线程池（2 个 worker，不占用 API 线程）
+_embedding_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="embed")
+
+# 任务队列：保证一次只处理一个文档（避免资源争抢）
+_processing_semaphore = asyncio.Semaphore(1)
 
 
 # ── 文档处理 ─────────────────────────────────────────────────
@@ -36,78 +43,94 @@ async def process_document_background(
 ) -> None:
     """
     后台任务：解析文档 → 生成嵌入 → 写入 document_chunks。
-    由 FastAPI BackgroundTasks 调用，使用独立数据库会话。
+    使用信号量确保同一时间只处理一个文档，避免阻塞 API。
     """
-    async with db_session_factory() as db:
-        try:
-            # 更新状态为 processing
-            await db.execute(
-                update(KnowledgeDocument)
-                .where(KnowledgeDocument.id == document_id)
-                .values(status="processing", error_message=None)
-            )
-            await db.commit()
-
-            # 解析文档
-            logger.info("开始解析文档 %s (类型: %s)", document_id, file_type)
-            chunks = await asyncio.to_thread(parse_document, file_bytes, file_type)
-
-            if not chunks:
-                raise ValueError("文档中未提取到任何文本内容")
-
-            # 批量生成嵌入向量（每批 64 条）
-            batch_size = 64
-            all_embeddings: list[list[float]] = []
-            for i in range(0, len(chunks), batch_size):
-                batch_texts = [c.text for c in chunks[i:i + batch_size]]
-                batch_embs = await embed_texts(batch_texts)
-                all_embeddings.extend(batch_embs)
-
-            # 删除旧切片（重新处理时）
-            await db.execute(
-                delete(DocumentChunk).where(DocumentChunk.document_id == document_id)
-            )
-
-            # 批量插入新切片
-            db.add_all([
-                DocumentChunk(
-                    document_id=document_id,
-                    chunk_index=chunk.chunk_index,
-                    chunk_text=chunk.text,
-                    embedding=embedding,
-                    page_number=chunk.page_number,
-                    chunk_metadata={"char_count": len(chunk.text)},
+    async with _processing_semaphore:
+        async with db_session_factory() as db:
+            try:
+                # 更新状态为 processing
+                await db.execute(
+                    update(KnowledgeDocument)
+                    .where(KnowledgeDocument.id == document_id)
+                    .values(status="processing", error_message=None)
                 )
-                for chunk, embedding in zip(chunks, all_embeddings)
-            ])
+                await db.commit()
 
-            # 更新文档状态
-            await db.execute(
-                update(KnowledgeDocument)
-                .where(KnowledgeDocument.id == document_id)
-                .values(status="ready", chunk_count=len(chunks), error_message=None)
-            )
-            await db.commit()
-            logger.info("文档 %s 处理完成，共 %d 个切片", document_id, len(chunks))
+                # 在专用线程池中解析文档（不阻塞 API 线程池）
+                logger.info("开始解析文档 %s (类型: %s)", document_id, file_type)
+                loop = asyncio.get_event_loop()
+                chunks = await loop.run_in_executor(
+                    _embedding_executor, parse_document, file_bytes, file_type
+                )
 
-        except Exception as e:
-            logger.error("文档 %s 处理失败: %s", document_id, e)
-            # 确保即使 rollback 失败也能标记为 failed
-            try:
-                await db.rollback()
-            except Exception:
-                pass
-            try:
-                # 使用新的 session 确保状态更新成功
-                async with db_session_factory() as db2:
-                    await db2.execute(
-                        update(KnowledgeDocument)
-                        .where(KnowledgeDocument.id == document_id)
-                        .values(status="failed", error_message=str(e)[:500])
+                if not chunks:
+                    raise ValueError("文档中未提取到任何文本内容")
+
+                # 清洗文本：移除 null 字节（PostgreSQL 不支持 \x00）
+                for chunk in chunks:
+                    chunk.text = chunk.text.replace("\x00", "")
+
+                # 在专用线程池中批量生成嵌入向量
+                batch_size = 32  # 减小批次避免长时间占用
+                all_embeddings: list[list[float]] = []
+                for i in range(0, len(chunks), batch_size):
+                    batch_texts = [c.text for c in chunks[i:i + batch_size]]
+                    batch_embs = await loop.run_in_executor(
+                        _embedding_executor, embed_texts_sync, batch_texts
                     )
-                    await db2.commit()
-            except Exception as e2:
-                logger.error("文档 %s 状态更新也失败: %s", document_id, e2)
+                    all_embeddings.extend(batch_embs)
+                    # 每批次后让出事件循环，让 API 请求得以处理
+                    await asyncio.sleep(0)
+
+                # 删除旧切片（重新处理时）
+                await db.execute(
+                    delete(DocumentChunk).where(DocumentChunk.document_id == document_id)
+                )
+
+                # 分批插入（避免单条 SQL 过大）
+                insert_batch = 50
+                for i in range(0, len(chunks), insert_batch):
+                    batch_chunks = chunks[i:i + insert_batch]
+                    batch_embs = all_embeddings[i:i + insert_batch]
+                    db.add_all([
+                        DocumentChunk(
+                            document_id=document_id,
+                            chunk_index=chunk.chunk_index,
+                            chunk_text=chunk.text,
+                            embedding=embedding,
+                            page_number=chunk.page_number,
+                            chunk_metadata={"char_count": len(chunk.text)},
+                        )
+                        for chunk, embedding in zip(batch_chunks, batch_embs)
+                    ])
+                    await db.flush()
+                    await asyncio.sleep(0)  # 让出事件循环
+
+                # 更新文档状态
+                await db.execute(
+                    update(KnowledgeDocument)
+                    .where(KnowledgeDocument.id == document_id)
+                    .values(status="ready", chunk_count=len(chunks), error_message=None)
+                )
+                await db.commit()
+                logger.info("文档 %s 处理完成，共 %d 个切片", document_id, len(chunks))
+
+            except Exception as e:
+                logger.error("文档 %s 处理失败: %s", document_id, e)
+                try:
+                    await db.rollback()
+                except Exception:
+                    pass
+                try:
+                    async with db_session_factory() as db2:
+                        await db2.execute(
+                            update(KnowledgeDocument)
+                            .where(KnowledgeDocument.id == document_id)
+                            .values(status="failed", error_message=str(e)[:500])
+                        )
+                        await db2.commit()
+                except Exception as e2:
+                    logger.error("文档 %s 状态更新也失败: %s", document_id, e2)
 
 
 # ── 查询 ────────────────────────────────────────────────────
@@ -166,8 +189,6 @@ async def semantic_search(
     """
     query_embedding = await embed_query(query)
 
-    # pgvector 余弦距离 = 1 - 余弦相似度
-    # 使用 <=> 运算符（cosine_distance），结果越小越相似
     distance_col = DocumentChunk.embedding.cosine_distance(query_embedding)
 
     stmt = (
