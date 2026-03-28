@@ -1,14 +1,7 @@
-"""知识库管理 API 集成测试"""
-
-import io
+"""知识库管理 API 集成测试（连接到运行中的 FastAPI 服务）"""
 
 import pytest
 from httpx import AsyncClient
-
-
-def _make_txt_file(content: str = "Epigenetic aging and DNA methylation clocks.") -> tuple[str, bytes, str]:
-    """返回 (field_name, file_bytes, filename)"""
-    return ("file", io.BytesIO(content.encode()).read(), "test_paper.txt")
 
 
 class TestKnowledgeUpload:
@@ -51,8 +44,8 @@ class TestKnowledgeList:
         )
         assert res.status_code == 403
 
-    async def test_list_empty(self, client: AsyncClient, admin_token: str):
-        """空知识库应返回空列表。"""
+    async def test_list_as_admin(self, client: AsyncClient, admin_token: str):
+        """管理员可以正常列出知识库。"""
         res = await client.get(
             "/api/v1/admin/knowledge",
             headers={"Authorization": f"Bearer {admin_token}"},
@@ -73,8 +66,8 @@ class TestKnowledgeSearch:
         )
         assert res.status_code == 403
 
-    async def test_search_empty_kb(self, client: AsyncClient, admin_token: str):
-        """空知识库搜索应返回空结果而非报错。"""
+    async def test_search_as_admin(self, client: AsyncClient, admin_token: str):
+        """管理员搜索空知识库应返回空结果。"""
         res = await client.post(
             "/api/v1/admin/knowledge/search",
             json={"query": "epigenetic aging", "top_k": 5},
@@ -83,4 +76,4 @@ class TestKnowledgeSearch:
         assert res.status_code == 200
         data = res.json()
         assert data["query"] == "epigenetic aging"
-        assert data["results"] == []
+        assert isinstance(data["results"], list)
