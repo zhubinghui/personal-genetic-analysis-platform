@@ -5,6 +5,7 @@ import {
   Radar, ResponsiveContainer, Tooltip,
 } from "recharts";
 import type { DunedinPaceDimensions } from "@/types";
+import { TermLabel } from "@/components/ui/InfoTip";
 
 interface Props {
   dimensions: DunedinPaceDimensions;
@@ -42,18 +43,20 @@ export default function DunedinPaceRadar({ dimensions, paceScore }: Props) {
     score: Math.round(categoryAverage(metrics) * 100) / 100,
   }));
 
-  // 判断是否所有维度均为默认值（全 null → 均为 1.0）
   const allDefault = data.every((d) => d.score === 1.0);
-
   const color = getPaceColor(paceScore);
 
   return (
-    <div className="bg-white rounded-2xl border p-6">
+    <div className="card p-6">
       <div className="flex items-start justify-between mb-4">
-        <h3 className="font-semibold text-gray-800">DunedinPACE 系统维度</h3>
+        <h3 className="font-semibold text-gray-800">
+          <TermLabel term="dunedinpace">DunedinPACE 系统维度</TermLabel>
+        </h3>
         <div className="text-right">
-          <p className="text-3xl font-bold" style={{ color }}>{paceScore.toFixed(3)}</p>
-          <p className="text-xs text-gray-400">衰老速率（1.0 = 人群均值）</p>
+          <p className="text-3xl metric-value" style={{ color }}>{paceScore.toFixed(3)}</p>
+          <p className="text-xs text-gray-400">
+            <TermLabel term="aging_rate">衰老速率</TermLabel>（1.0 = 人群均值）
+          </p>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={300}>

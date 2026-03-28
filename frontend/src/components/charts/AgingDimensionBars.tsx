@@ -2,6 +2,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ReferenceLine, ResponsiveContainer } from "recharts";
 import type { DunedinPaceDimensions } from "@/types";
+import { TermLabel } from "@/components/ui/InfoTip";
 
 interface Props {
   dimensions: DunedinPaceDimensions;
@@ -47,10 +48,12 @@ export default function AgingDimensionBars({ dimensions }: Props) {
   const allNull = data.length === 0;
 
   return (
-    <div className="bg-white rounded-2xl border p-6">
-      <h3 className="font-semibold text-gray-800 mb-1">19 项生理维度评分</h3>
+    <div className="card p-6">
+      <h3 className="font-semibold text-gray-800 mb-1">
+        <TermLabel term="dunedinpace">19 项生理维度评分</TermLabel>
+      </h3>
       <p className="text-xs text-gray-400 mb-4">
-        基于 DunedinPACE 模型探针加权贡献推断，仅供参考，不代表实测生化值
+        基于 <TermLabel term="dna_methylation">DunedinPACE</TermLabel> 模型探针加权贡献推断，仅供参考，不代表实测生化值
       </p>
 
       {allNull ? (
@@ -74,7 +77,7 @@ export default function AgingDimensionBars({ dimensions }: Props) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <div className="flex gap-4 justify-center mt-3 text-xs text-gray-500">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-3 text-xs text-gray-500">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 inline-block" /> 减缓（&lt;0.9）</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-yellow-400 inline-block" /> 正常（0.9-1.1）</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-orange-400 inline-block" /> 偏高（1.1-1.3）</span>
