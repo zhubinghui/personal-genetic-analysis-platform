@@ -75,6 +75,23 @@ export default function AdminSettingsPage() {
   const [testing, setTesting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
+  // 向量化设置
+  const [vecWorkers, setVecWorkers] = useState(2);
+  const [vecPoolSize, setVecPoolSize] = useState(2);
+  const [vecPending, setVecPending] = useState(0);
+  const [vecProcessing, setVecProcessing] = useState(0);
+  const [vecSaving, setVecSaving] = useState(false);
+  const [vecFeedback, setVecFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  useEffect(() => {
+    settingsApi.getVectorization().then((data) => {
+      setVecWorkers(data.embedding_workers);
+      setVecPoolSize(data.current_pool_size);
+      setVecPending(data.pending_documents);
+      setVecProcessing(data.processing_documents);
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     settingsApi.getLLM().then((data: any) => {
       setProvider(data.provider || "");
@@ -290,6 +307,110 @@ export default function AdminSettingsPage() {
           }`}>
             <span className="shrink-0 mt-0.5">{feedback.type === "success" ? "✓" : "✗"}</span>
             <span>{feedback.msg}</span>
+          </div>
+        )}
+      </div>
+
+      {/* 向量化进程池设置 */}
+      <div className="card p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-gray-800">向量化进程池</h2>
+            <p className="text-xs text-gray-500 mt-0.5">配置知识库文献向量化的并行处理能力</p>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            {vecProcessing > 0 && (
+              <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                处理中 {vecProcessing}
+              </span>
+            )}
+            {vecPending > 0 && (
+              <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded-full">
+                等待 {vecPending}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Worker 进程数</label>
+              <p className="text-xs text-gray-400 mt-0.5">
+                每个进程独立加载嵌入模型（约 200MB 内存），当前运行: {vecPoolSize} 个进程
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setVecWorkers(Math.max(1, vecWorkers - 1))}
+                className="w-8 h-8 border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition flex items-center justify-center"
+              >
+                -
+              </button>
+              <span className="w-10 text-center text-lg font-bold text-brand-600">{vecWorkers}</span>
+              <button
+                onClick={() => setVecWorkers(Math.min(8, vecWorkers + 1))}
+                className="w-8 h-8 border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition flex items-center justify-center"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              <button
+                key={n}
+                onClick={() => setVecWorkers(n)}
+                className={`flex-1 py-1.5 rounded text-xs font-medium transition ${
+                  vecWorkers === n
+                    ? "bg-brand-600 text-white"
+                    : n <= 2
+                    ? "bg-green-50 text-green-700 hover:bg-green-100"
+                    : n <= 4
+                    ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                    : "bg-red-50 text-red-700 hover:bg-red-100"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400">
+            推荐: <span className="text-green-600">1-2</span> 低内存 ·
+            <span className="text-yellow-600 ml-1">3-4</span> 标准 ·
+            <span className="text-red-600 ml-1">5-8</span> 高性能（需充足内存）
+          </p>
+        </div>
+
+        <button
+          onClick={async () => {
+            setVecSaving(true);
+            setVecFeedback(null);
+            try {
+              const res = await settingsApi.updateVectorization(vecWorkers);
+              setVecPoolSize(vecWorkers);
+              setVecFeedback({ type: "success", msg: res.message });
+              setTimeout(() => setVecFeedback(null), 4000);
+            } catch (e) {
+              setVecFeedback({ type: "error", msg: e instanceof ApiError ? e.message : "保存失败" });
+            } finally {
+              setVecSaving(false);
+            }
+          }}
+          disabled={vecSaving}
+          className="w-full py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition shadow-sm"
+        >
+          {vecSaving ? "应用中..." : "应用设置（立即生效）"}
+        </button>
+
+        {vecFeedback && (
+          <div className={`px-4 py-3 rounded-xl text-sm flex items-start gap-2 ${
+            vecFeedback.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"
+          }`}>
+            <span className="shrink-0 mt-0.5">{vecFeedback.type === "success" ? "✓" : "✗"}</span>
+            <span>{vecFeedback.msg}</span>
           </div>
         )}
       </div>
