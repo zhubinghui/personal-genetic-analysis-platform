@@ -100,13 +100,13 @@ export default function LoginPage() {
                   type="button"
                   onClick={async () => {
                     try {
-                      await authApi.resendVerification(email);
+                      await authApi.sendCode("email", email);
                       setError("RESENT");
                     } catch {}
                   }}
                   className="text-xs text-brand-600 hover:underline"
                 >
-                  重新发送验证邮件
+                  重新发送验证码
                 </button>
               </div>
             ) : error === "RESENT" ? (

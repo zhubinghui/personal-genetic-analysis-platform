@@ -63,11 +63,11 @@ async function apiFetch<T>(
 
 // ── 认证 ────────────────────────────────────────────────────
 export const authApi = {
-  register: (email: string, password: string) =>
+  register: (email: string, password: string, phone?: string) =>
     apiFetch<User>("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ...(phone ? { phone } : {}) }),
       auth: false,
     }),
 
@@ -109,30 +109,35 @@ export const authApi = {
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
     }),
 
-  verifyEmail: (token: string) =>
-    apiFetch<{ message: string; verified: boolean }>(`/auth/verify-email?token=${token}`, { auth: false }),
-
-  resendVerification: (email: string) =>
-    apiFetch<{ message: string }>("/auth/resend-verification", {
+  sendCode: (channel: "email" | "sms", target: string) =>
+    apiFetch<{ message: string }>("/auth/send-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ channel, target }),
       auth: false,
     }),
 
-  forgotPassword: (email: string) =>
+  verifyCode: (channel: "email" | "sms", target: string, code: string) =>
+    apiFetch<{ message: string; verified: boolean }>("/auth/verify-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channel, target, code }),
+      auth: false,
+    }),
+
+  forgotPassword: (channel: "email" | "sms", target: string) =>
     apiFetch<{ message: string }>("/auth/forgot-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ channel, target }),
       auth: false,
     }),
 
-  resetPassword: (token: string, newPassword: string) =>
+  resetPassword: (channel: "email" | "sms", target: string, code: string, newPassword: string) =>
     apiFetch<{ message: string }>("/auth/reset-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, new_password: newPassword }),
+      body: JSON.stringify({ channel, target, code, new_password: newPassword }),
       auth: false,
     }),
 };

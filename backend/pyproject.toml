@@ -37,6 +37,11 @@ dependencies = [
     "httpx==0.28.1",
     "pandas==2.2.3",
     "numpy==2.1.3",
+    # 邮件 & 短信
+    "resend>=2.0.0",
+    "alibabacloud-dysmsapi20170525>=3.0.0",
+    "alibabacloud-tea-openapi>=0.3.0",
+    "redis[hiredis]>=5.0.0",
     # 知识库 — 向量数据库 & 嵌入
     "pgvector>=0.3.0",
     "fastembed>=0.3.6",

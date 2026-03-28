@@ -28,6 +28,7 @@ function isValidEmail(email: string): boolean {
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,7 +51,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await authApi.register(email, password);
+      await authApi.register(email, password, phone || undefined);
       setRegistered(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "注册失败");
@@ -66,23 +67,27 @@ export default function RegisterPage() {
           <div className="text-5xl">📧</div>
           <h1 className="text-xl font-bold text-gray-800">注册成功！请验证邮箱</h1>
           <p className="text-sm text-gray-500 leading-relaxed">
-            我们已向 <strong>{email}</strong> 发送了一封验证邮件。<br />
-            请点击邮件中的链接完成验证后登录。
+            验证码已发送到 <strong>{email}</strong>
+            {phone && <> 和手机 <strong>{phone}</strong></>}。<br />
+            请输入验证码完成注册。
           </p>
+          <Link
+            href={`/verify-email?email=${encodeURIComponent(email)}${phone ? `&phone=${encodeURIComponent(phone)}` : ""}`}
+            className="inline-block px-6 py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition"
+          >
+            输入验证码
+          </Link>
           <p className="text-xs text-gray-400">
-            没有收到邮件？请检查垃圾邮件文件夹，或
+            没有收到？
             <button
               onClick={async () => {
-                try { await authApi.resendVerification(email); alert("验证邮件已重新发送"); } catch {}
+                try { await authApi.sendCode("email", email); alert("验证码已重新发送"); } catch {}
               }}
               className="text-brand-600 hover:underline"
             >
               重新发送
             </button>
           </p>
-          <Link href="/login" className="inline-block text-brand-600 hover:underline text-sm">
-            前往登录
-          </Link>
         </div>
       </div>
     );
@@ -137,6 +142,19 @@ export default function RegisterPage() {
               {!emailValid && (
                 <p className="text-xs text-red-500">请输入有效的邮箱格式</p>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">
+                手机号 <span className="text-gray-400 font-normal">（选填，可用于短信验证）</span>
+              </label>
+              <input
+                type="tel" value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="13800138000"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+              />
             </div>
 
             <div className="space-y-1.5">
