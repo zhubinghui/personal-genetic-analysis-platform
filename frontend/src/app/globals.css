@@ -15,7 +15,8 @@
 
   /* 选中文字颜色 */
   ::selection {
-    @apply bg-brand-100 text-brand-900;
+    background-color: #dcfce7;
+    color: #14532d;
   }
 }
 
