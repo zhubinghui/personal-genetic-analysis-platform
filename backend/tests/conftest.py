@@ -1,8 +1,8 @@
 """
-共享测试夹具（fixtures）
+共享测试夹具
 
-关键设计：集成测试中 `db` 和 `client` 共享同一个数据库连接和外层事务，
-测试结束后整体回滚，确保测试隔离。
+策略：每个测试使用独立的 AsyncSession（不共享连接），
+用 UUID 保证数据唯一性，避免 asyncpg 并发冲突。
 """
 
 import base64
@@ -12,13 +12,8 @@ import uuid
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text, event
-from sqlalchemy.ext.asyncio import (
-    AsyncConnection,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
 from app.database import Base, get_db
@@ -26,14 +21,14 @@ from app.main import app
 from app.models.user import User
 from app.utils.auth import create_access_token, hash_password
 
-
 # ── 测试数据库引擎 ─────────────────────────────────────────
 
 TEST_DB_URL = os.environ.get("TEST_DATABASE_URL", settings.database_url)
-_test_engine = create_async_engine(TEST_DB_URL, echo=False, pool_size=5)
+_test_engine = create_async_engine(TEST_DB_URL, echo=False, pool_size=5, max_overflow=10)
+_TestSession = async_sessionmaker(_test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
-# ── 数据库生命周期（session 级别） ─────────────────────────
+# ── 数据库生命周期 ────────────────────────────────────────
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def _setup_db():
@@ -47,48 +42,23 @@ async def _setup_db():
     await _test_engine.dispose()
 
 
-# ── 每个测试共享一个连接 + 外层事务 → 结束后回滚 ─────────
+# ── DB session（独立连接）──────────────────────────────────
 
 @pytest_asyncio.fixture
-async def _db_connection(_setup_db):
-    """为每个测试用例创建一个独立连接 + 外层事务。"""
-    async with _test_engine.connect() as conn:
-        trans = await conn.begin()
-        yield conn
-        await trans.rollback()
+async def db(_setup_db) -> AsyncSession:
+    async with _TestSession() as session:
+        yield session
 
 
-@pytest_asyncio.fixture
-async def db(_db_connection: AsyncConnection) -> AsyncSession:
-    """
-    提供一个绑定到测试连接的 AsyncSession。
-    内部 commit() 会变成 savepoint（不会真正提交外层事务）。
-    """
-    session = AsyncSession(bind=_db_connection, expire_on_commit=False)
-    # 使 session.commit() 创建 savepoint 而非提交外层事务
-    @event.listens_for(session.sync_session, "after_transaction_end")
-    def _restart_savepoint(session_sync, transaction):
-        if transaction.nested and not transaction._parent.nested:
-            session_sync.begin_nested()
-
-    yield session
-    await session.close()
-
+# ── FastAPI 测试客户端 ────────────────────────────────────
 
 @pytest_asyncio.fixture
-async def client(_db_connection: AsyncConnection, _setup_db) -> AsyncClient:
-    """
-    httpx 测试客户端。API 内部的 get_db 被覆盖为返回与 `db` 同一连接的 session，
-    确保 fixture 创建的数据对 API 可见。
-    """
-    async def _override_get_db():
-        session = AsyncSession(bind=_db_connection, expire_on_commit=False)
-        try:
+async def client(_setup_db) -> AsyncClient:
+    async def _override():
+        async with _TestSession() as session:
             yield session
-        finally:
-            await session.close()
 
-    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_db] = _override
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
@@ -99,33 +69,36 @@ async def client(_db_connection: AsyncConnection, _setup_db) -> AsyncClient:
 
 @pytest.fixture
 def encryption_key() -> bytes:
-    """固定的 32 字节 AES-256 测试密钥。"""
     return base64.b64decode("dGVzdGtleTEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNA==")
 
 
 @pytest_asyncio.fixture
-async def test_user(db: AsyncSession) -> User:
-    """创建普通测试用户（对 client 可见）。"""
-    user = User(
-        email=f"test_{uuid.uuid4().hex[:8]}@example.com",
-        password_hash=hash_password("TestPass123!"),
-    )
-    db.add(user)
-    await db.flush()
-    return user
+async def test_user(_setup_db) -> User:
+    """创建普通用户并 commit（对所有 session 可见）。"""
+    async with _TestSession() as session:
+        user = User(
+            email=f"test_{uuid.uuid4().hex[:8]}@example.com",
+            password_hash=hash_password("TestPass123!"),
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        return user
 
 
 @pytest_asyncio.fixture
-async def admin_user(db: AsyncSession) -> User:
-    """创建管理员测试用户（对 client 可见）。"""
-    user = User(
-        email=f"admin_{uuid.uuid4().hex[:8]}@example.com",
-        password_hash=hash_password("AdminPass123!"),
-        is_admin=True,
-    )
-    db.add(user)
-    await db.flush()
-    return user
+async def admin_user(_setup_db) -> User:
+    """创建管理员用户并 commit（对所有 session 可见）。"""
+    async with _TestSession() as session:
+        user = User(
+            email=f"admin_{uuid.uuid4().hex[:8]}@example.com",
+            password_hash=hash_password("AdminPass123!"),
+            is_admin=True,
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
+        return user
 
 
 @pytest.fixture
