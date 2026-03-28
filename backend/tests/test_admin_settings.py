@@ -53,7 +53,13 @@ class TestLLMSettings:
 
     async def test_test_connection_no_config(self, client: AsyncClient, admin_token: str):
         """未配置时测试连接应返回 400。"""
-        # 先清空配置
+        # 先保存当前配置
+        current = (await client.get(
+            "/api/v1/admin/settings/llm",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )).json()
+
+        # 临时清空配置
         await client.put(
             "/api/v1/admin/settings/llm",
             json={"provider": "", "api_key": ""},
@@ -65,6 +71,14 @@ class TestLLMSettings:
         )
         assert res.status_code == 400
         assert "未配置" in res.json()["detail"]
+
+        # 恢复原配置（避免破坏生产数据）
+        if current.get("provider"):
+            await client.put(
+                "/api/v1/admin/settings/llm",
+                json={"provider": current["provider"]},
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
 
 
 class TestChatEndpoint:
