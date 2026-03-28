@@ -2,16 +2,17 @@
 知识库业务逻辑
 
 架构：
-  - 向量化使用独立线程池（EMBEDDING_WORKERS 个并发），与 API 完全隔离
-  - DB 查询使用 API 主线程池，互不干扰
-  - 每个文档的解析+嵌入全部在独立线程中完成（同步执行），只在写 DB 时回到异步
+  - 向量化使用独立进程池（ProcessPoolExecutor），完全绕过 GIL，真正 CPU 并行
+  - 每个 worker 进程加载独立的嵌入模型实例，内存约 200MB/进程
+  - API 查询在主进程事件循环中运行，与向量化零干扰
+  - DB 写入操作回到主进程异步执行
 """
 
 import asyncio
 import logging
 import os
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,15 +24,21 @@ from app.services.embedding_service import embed_query, embed_texts_sync
 
 logger = logging.getLogger(__name__)
 
-# 向量化专用线程池：
-# - 默认 4 个 worker，可通过环境变量调整
-# - 与 asyncio 默认线程池完全隔离，API 请求不受影响
-EMBEDDING_WORKERS = int(os.environ.get("EMBEDDING_WORKERS", "4"))
-_embedding_pool = ThreadPoolExecutor(
-    max_workers=EMBEDDING_WORKERS,
-    thread_name_prefix="vectorize",
-)
-logger.info("向量化线程池启动: %d workers", EMBEDDING_WORKERS)
+# 向量化专用进程池：
+# - 独立进程，完全绕过 Python GIL，CPU 密集型任务真正并行
+# - 默认 2 个 worker（每个进程加载独立的嵌入模型，内存约 200MB/进程）
+# - 可通过环境变量 EMBEDDING_WORKERS 调整
+EMBEDDING_WORKERS = int(os.environ.get("EMBEDDING_WORKERS", "2"))
+_embedding_pool: ProcessPoolExecutor | None = None
+
+
+def _get_embedding_pool() -> ProcessPoolExecutor:
+    """懒初始化进程池（避免 fork 时机问题）。"""
+    global _embedding_pool
+    if _embedding_pool is None:
+        _embedding_pool = ProcessPoolExecutor(max_workers=EMBEDDING_WORKERS)
+        logger.info("向量化进程池启动: %d workers", EMBEDDING_WORKERS)
+    return _embedding_pool
 
 
 def _process_document_sync(
@@ -82,11 +89,12 @@ async def process_document_background(
         await db.commit()
 
     try:
-        # 在专用线程池中执行 CPU 密集的解析+嵌入（完全不阻塞事件循环）
+        # 在专用进程池中执行 CPU 密集的解析+嵌入
+        # 独立进程绕过 GIL，真正并行，完全不阻塞主进程事件循环
         loop = asyncio.get_event_loop()
         logger.info("文档 %s 开始向量化 (类型: %s)", document_id, file_type)
         chunks, all_embeddings = await loop.run_in_executor(
-            _embedding_pool,
+            _get_embedding_pool(),
             _process_document_sync,
             file_bytes,
             file_type,
