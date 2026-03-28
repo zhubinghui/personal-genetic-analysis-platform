@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [samples, setSamples] = useState<Sample[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   // Token 自动刷新
   useTokenRefresh();
@@ -35,6 +36,19 @@ export default function DashboardPage() {
     };
     init();
   }, [router]);
+
+  const handleDeleteSample = async (sampleId: string) => {
+    if (!confirm("确定要删除该采样数据及其所有分析结果吗？此操作不可撤销。")) return;
+    setDeleting(sampleId);
+    try {
+      await sampleApi.delete(sampleId);
+      setSamples((prev) => prev.filter((s) => s.id !== sampleId));
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "删除失败");
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">加载中...</div>;
 
@@ -107,7 +121,7 @@ export default function DashboardPage() {
                     {sample.chronological_age && ` · ${sample.chronological_age} 岁`}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <JobStatusBadge jobStatus={sample.latest_job_status} />
                   {sample.latest_job_status === "completed" && sample.latest_job_id && (
                     <Link
@@ -125,6 +139,14 @@ export default function DashboardPage() {
                       查看进度
                     </Link>
                   )}
+                  <button
+                    onClick={() => handleDeleteSample(sample.id)}
+                    disabled={deleting === sample.id}
+                    className="px-2.5 py-1.5 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                    title="删除此采样数据"
+                  >
+                    {deleting === sample.id ? "删除中..." : "🗑"}
+                  </button>
                 </div>
               </div>
             ))}
