@@ -232,6 +232,20 @@ export const settingsApi = {
       body: JSON.stringify(data),
     }),
   testLLM: () => apiFetch<{ status: string; response: string; provider: string }>("/admin/settings/llm/test", { method: "POST" }),
+
+  getVectorization: () => apiFetch<{
+    embedding_workers: number;
+    current_pool_size: number;
+    pending_documents: number;
+    processing_documents: number;
+  }>("/admin/settings/vectorization"),
+
+  updateVectorization: (workers: number) =>
+    apiFetch<{ message: string }>("/admin/settings/vectorization", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embedding_workers: workers }),
+    }),
 };
 
 // ── 管理员用户管理 ──────────────────────────────────────────────
