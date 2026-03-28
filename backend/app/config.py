@@ -34,14 +34,19 @@ class Settings(BaseSettings):
     jwt_access_expire_minutes: int = 60
     jwt_refresh_expire_days: int = 30
 
-    # SMTP 邮件
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_password: str = ""
-    smtp_from_email: str = ""
-    smtp_from_name: str = "基因抗衰老分析平台"
-    email_verify_expire_hours: int = 24
+    # Resend 邮件 API
+    resend_api_key: str = ""
+    email_from_address: str = "noreply@yourdomain.com"
+    email_from_name: str = "基因抗衰老分析平台"
+
+    # 阿里云短信
+    aliyun_access_key_id: str = ""
+    aliyun_access_key_secret: str = ""
+    aliyun_sms_sign_name: str = ""       # 短信签名
+    aliyun_sms_template_code: str = ""   # 模板 Code（含 ${code} 变量）
+
+    # 验证码
+    verify_code_expire_minutes: int = 10
     password_reset_expire_minutes: int = 30
 
     # 应用

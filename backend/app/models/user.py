@@ -25,6 +25,7 @@ class User(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     consent_version: Mapped[str | None] = mapped_column(String(20), nullable=True)

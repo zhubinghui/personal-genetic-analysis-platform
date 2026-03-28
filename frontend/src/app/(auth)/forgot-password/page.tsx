@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { authApi, ApiError } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const [channel, setChannel] = useState<"email" | "sms">("email");
+  const [target, setTarget] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -15,10 +18,10 @@ export default function ForgotPasswordPage() {
     setError("");
     setLoading(true);
     try {
-      await authApi.forgotPassword(email);
+      await authApi.forgotPassword(channel, target);
       setSent(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "发送失败，请重试");
+      setError(err instanceof ApiError ? err.message : "发送失败");
     } finally {
       setLoading(false);
     }
@@ -28,14 +31,19 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
         <div className="w-full max-w-sm text-center space-y-4">
-          <div className="text-5xl">📧</div>
-          <h1 className="text-xl font-bold text-gray-800">重置邮件已发送</h1>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            如果 <strong>{email}</strong> 已注册，您将收到一封包含密码重置链接的邮件。请查看收件箱（包括垃圾邮件文件夹）。
+          <div className="text-5xl">{channel === "email" ? "📧" : "📱"}</div>
+          <h1 className="text-xl font-bold text-gray-800">验证码已发送</h1>
+          <p className="text-sm text-gray-500">
+            重置验证码已发送到{channel === "email" ? "邮箱" : "手机"} <strong>{target}</strong>
           </p>
-          <p className="text-xs text-gray-400">链接有效期 30 分钟</p>
-          <Link href="/login" className="inline-block text-brand-600 hover:underline text-sm">
-            返回登录
+          <button
+            onClick={() => router.push(`/reset-password?channel=${channel}&target=${encodeURIComponent(target)}`)}
+            className="w-full py-3 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 transition"
+          >
+            输入验证码重置密码
+          </button>
+          <Link href="/login" className="text-sm text-gray-500 hover:text-brand-600 block">
+            ← 返回登录
           </Link>
         </div>
       </div>
@@ -48,32 +56,42 @@ export default function ForgotPasswordPage() {
         <div className="text-center mb-8">
           <span className="text-4xl">🔑</span>
           <h1 className="text-xl font-bold text-gray-800 mt-3">忘记密码</h1>
-          <p className="text-sm text-gray-500 mt-1">输入您的注册邮箱，我们将发送重置链接</p>
+          <p className="text-sm text-gray-500 mt-1">选择验证方式接收重置验证码</p>
+        </div>
+
+        {/* 通道切换 */}
+        <div className="flex rounded-xl bg-gray-100 p-1 mb-6">
+          {(["email", "sms"] as const).map((ch) => (
+            <button
+              key={ch}
+              onClick={() => { setChannel(ch); setTarget(""); }}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                channel === ch ? "bg-white text-brand-600 shadow-sm" : "text-gray-500"
+              }`}
+            >
+              {ch === "email" ? "📧 邮箱" : "📱 手机"}
+            </button>
+          ))}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">邮箱地址</label>
-            <input
-              type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50
-                         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
-            />
-          </div>
+          <input
+            type={channel === "email" ? "email" : "tel"}
+            required
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            placeholder={channel === "email" ? "your@email.com" : "13800138000"}
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-gray-50
+                       focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+          />
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-sm text-red-600">
-              {error}
-            </div>
-          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
           <button
-            type="submit" disabled={loading}
-            className="w-full py-3 bg-brand-600 text-white rounded-xl font-medium
-                       hover:bg-brand-700 disabled:opacity-50 transition shadow-sm"
+            type="submit" disabled={loading || !target}
+            className="w-full py-3 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition"
           >
-            {loading ? "发送中..." : "发送重置邮件"}
+            {loading ? "发送中..." : "发送重置验证码"}
           </button>
         </form>
 

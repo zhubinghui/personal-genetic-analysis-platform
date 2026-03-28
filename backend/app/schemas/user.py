@@ -7,6 +7,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    phone: str | None = None
 
     @field_validator("password")
     @classmethod
@@ -24,6 +25,7 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     id: uuid.UUID
     email: str
+    phone: str | None = None
     is_admin: bool = False
     email_verified: bool = False
     consent_version: str | None
@@ -86,16 +88,28 @@ class AdminSetStatusRequest(BaseModel):
 
 # ── 邮箱验证 & 密码重置 ─────────────────
 
-class ResendVerificationRequest(BaseModel):
-    email: EmailStr
+class SendCodeRequest(BaseModel):
+    """发送验证码（邮箱或手机二选一）"""
+    channel: str  # "email" 或 "sms"
+    target: str   # 邮箱地址或手机号
+
+
+class VerifyCodeRequest(BaseModel):
+    """校验验证码"""
+    channel: str  # "email" 或 "sms"
+    target: str   # 邮箱地址或手机号
+    code: str     # 6 位验证码
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    channel: str  # "email" 或 "sms"
+    target: str   # 邮箱地址或手机号
 
 
 class ResetPasswordRequest(BaseModel):
-    token: str
+    channel: str
+    target: str
+    code: str
     new_password: str
 
     @field_validator("new_password")
