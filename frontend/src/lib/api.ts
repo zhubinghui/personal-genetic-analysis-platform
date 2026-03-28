@@ -9,6 +9,7 @@ import type {
   SampleUploadResponse,
   SearchResponse,
   TokenResponse,
+  TrendResponse,
   User,
 } from "@/types";
 
@@ -144,6 +145,11 @@ export const reportApi = {
   get: (jobId: string) => apiFetch<ReportData>(`/reports/${jobId}`),
   pdfUrl: (jobId: string) =>
     `${API_BASE}/api/v1/reports/${jobId}/pdf?token=${Cookies.get("access_token") ?? ""}`,
+};
+
+// ── 纵向对比 ───────────────────────────────────────────────────
+export const trendApi = {
+  get: () => apiFetch<TrendResponse>("/trends"),
 };
 
 // ── 管理员知识库 ───────────────────────────────────────────────

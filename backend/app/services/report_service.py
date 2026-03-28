@@ -59,6 +59,7 @@ class ReportData:
     dimensions: dict | None
     recommendations: list[Recommendation]
     qc_summary: QCSummary
+    benchmark: dict | None = None  # BenchmarkData 序列化后的 dict
     pdf_available: bool = False
 
 
@@ -106,6 +107,16 @@ class ReportService:
 
         summary = self._build_summary(clocks)
 
+        # 同龄对标
+        benchmark_data = None
+        try:
+            from app.services.benchmark_service import compute_benchmark
+            bm = await compute_benchmark(db, ar)
+            if bm:
+                benchmark_data = bm.model_dump()
+        except Exception:
+            pass  # 对标计算失败不影响报告
+
         report = ReportData(
             job_id=str(job_id),
             generated_at=datetime.now(timezone.utc).isoformat(),
@@ -118,6 +129,7 @@ class ReportService:
                 n_probes_before=ar.n_probes_before,
                 n_probes_after=ar.n_probes_after,
             ),
+            benchmark=benchmark_data,
         )
 
         # 生成 PDF 并存入 MinIO
