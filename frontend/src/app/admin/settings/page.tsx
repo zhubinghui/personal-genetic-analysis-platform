@@ -333,55 +333,26 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Worker 进程数</label>
-              <p className="text-xs text-gray-400 mt-0.5">
-                每个进程独立加载嵌入模型（约 200MB 内存），当前运行: {vecPoolSize} 个进程
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setVecWorkers(Math.max(1, vecWorkers - 1))}
-                className="w-8 h-8 border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition flex items-center justify-center"
-              >
-                -
-              </button>
-              <span className="w-10 text-center text-lg font-bold text-brand-600">{vecWorkers}</span>
-              <button
-                onClick={() => setVecWorkers(Math.min(8, vecWorkers + 1))}
-                className="w-8 h-8 border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition flex items-center justify-center"
-              >
-                +
-              </button>
-            </div>
+        <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Worker 进程数</label>
+            <p className="text-xs text-gray-400 mt-0.5">当前运行: {vecPoolSize} 个进程</p>
           </div>
-
-          <div className="flex gap-1">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <button
-                key={n}
-                onClick={() => setVecWorkers(n)}
-                className={`flex-1 py-1.5 rounded text-xs font-medium transition ${
-                  vecWorkers === n
-                    ? "bg-brand-600 text-white"
-                    : n <= 2
-                    ? "bg-green-50 text-green-700 hover:bg-green-100"
-                    : n <= 4
-                    ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
-                    : "bg-red-50 text-red-700 hover:bg-red-100"
-                }`}
-              >
-                {n}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setVecWorkers(Math.max(1, vecWorkers - 1))}
+              className="w-9 h-9 border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition flex items-center justify-center text-lg font-medium"
+            >
+              -
+            </button>
+            <span className="w-10 text-center text-xl font-bold text-brand-600">{vecWorkers}</span>
+            <button
+              onClick={() => setVecWorkers(Math.min(8, vecWorkers + 1))}
+              className="w-9 h-9 border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition flex items-center justify-center text-lg font-medium"
+            >
+              +
+            </button>
           </div>
-          <p className="text-xs text-gray-400">
-            推荐: <span className="text-green-600">1-2</span> 低内存 ·
-            <span className="text-yellow-600 ml-1">3-4</span> 标准 ·
-            <span className="text-red-600 ml-1">5-8</span> 高性能（需充足内存）
-          </p>
         </div>
 
         <button
@@ -402,7 +373,7 @@ export default function AdminSettingsPage() {
           disabled={vecSaving}
           className="w-full py-2.5 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50 transition shadow-sm"
         >
-          {vecSaving ? "应用中..." : "应用设置（立即生效）"}
+          {vecSaving ? "应用中..." : "应用设置"}
         </button>
 
         {vecFeedback && (
