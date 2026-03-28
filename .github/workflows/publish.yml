@@ -1,0 +1,134 @@
+name: Build & Push to ACR
+
+# 触发条件：推送到 master 分支，或手动触发
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      push_worker:
+        description: "是否重新构建 Worker（R/Bioconductor，耗时约 60 min）"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+
+# ── 全局环境变量 ──────────────────────────────────────────────
+env:
+  ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
+  ACR_NAMESPACE: ${{ secrets.ACR_NAMESPACE }}
+
+jobs:
+  # ── 检测变更范围（决定哪些镜像需要重新构建）──────────────────
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      worker: ${{ steps.filter.outputs.worker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            worker:
+              - 'analysis/**'
+
+  # ── Backend 镜像构建推送 ──────────────────────────────────────
+  publish-backend:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Alibaba Cloud ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/genetic-platform-backend:latest
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/genetic-platform-backend:${{ github.sha }}
+          # GHA 缓存：后续构建只重新构建变更层
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  # ── Frontend 镜像构建推送 ─────────────────────────────────────
+  publish-frontend:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Alibaba Cloud ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/genetic-platform-frontend:latest
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/genetic-platform-frontend:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+  # ── Worker 镜像构建推送（最耗时，R + Bioconductor）───────────
+  # 仅当 analysis/ 有变更，或手动触发且 push_worker=true 时构建
+  publish-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # R/Bioconductor 编译约 60-90 分钟
+    needs: changes
+    if: |
+      needs.changes.outputs.worker == 'true' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.push_worker == 'true')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Alibaba Cloud ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push worker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./analysis
+          push: true
+          tags: |
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/genetic-platform-worker:latest
+            ${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_NAMESPACE }}/genetic-platform-worker:${{ github.sha }}
+          # Worker 层缓存极其重要：R/Bioconductor 层变动极少
+          # 只有 analysis/Dockerfile 或 renv.lock 变更才会触发 R 层重新构建
+          cache-from: type=gha,scope=worker
+          cache-to: type=gha,mode=max,scope=worker

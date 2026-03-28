@@ -1,0 +1,36 @@
+# =================================================================
+# 生产环境覆盖配置 — 适用于中国大陆服务器
+# 使用方式：
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# 前置条件：
+#   .env 中需配置：
+#     ACR_REGISTRY=registry.cn-hangzhou.aliyuncs.com
+#     ACR_NAMESPACE=你的命名空间
+#     HF_ENDPOINT=https://hf-mirror.com
+# =================================================================
+
+services:
+  # ── 使用 ACR 预构建镜像替换本地构建 ──────────────────────────
+
+  backend:
+    image: ${ACR_REGISTRY}/${ACR_NAMESPACE}/genetic-platform-backend:latest
+    # fastembed 首次启动时从 HuggingFace 下载模型，国内使用镜像站
+    environment:
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+
+  frontend:
+    image: ${ACR_REGISTRY}/${ACR_NAMESPACE}/genetic-platform-frontend:latest
+    # 生产模式：构建后以 standalone 模式运行
+    command: sh -c "npm run build && npm start"
+
+  worker:
+    image: ${ACR_REGISTRY}/${ACR_NAMESPACE}/genetic-platform-worker:latest
+    environment:
+      HF_ENDPOINT: ${HF_ENDPOINT:-https://hf-mirror.com}
+
+  # ── Nginx：监听本机回环，由宿主机 Nginx + HTTPS 终止 ─────────
+  # 宿主机 Nginx 配置 proxy_pass http://127.0.0.1:8080;
+  nginx:
+    ports:
+      - "127.0.0.1:8080:80"
