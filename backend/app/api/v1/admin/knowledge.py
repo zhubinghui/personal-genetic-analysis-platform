@@ -157,6 +157,36 @@ async def list_knowledge_documents(
     return KnowledgeDocumentList(total=total, items=items)
 
 
+# ── 文献统计 ──────────────────────────────────────────────────
+
+@router.get("/stats")
+async def knowledge_stats(
+    _: Annotated[User, Depends(get_admin_user)] = None,
+    db: Annotated[AsyncSession, Depends(get_db)] = None,
+) -> dict:
+    """返回各状态文献数量统计。"""
+    from sqlalchemy import case as sa_case, func as sa_func
+    result = await db.execute(
+        select(
+            sa_func.count().label("total"),
+            sa_func.count().filter(KnowledgeDocument.status == "ready").label("ready"),
+            sa_func.count().filter(KnowledgeDocument.status == "processing").label("processing"),
+            sa_func.count().filter(KnowledgeDocument.status == "pending").label("pending"),
+            sa_func.count().filter(KnowledgeDocument.status == "failed").label("failed"),
+            sa_func.coalesce(sa_func.sum(KnowledgeDocument.chunk_count), 0).label("total_chunks"),
+        ).select_from(KnowledgeDocument)
+    )
+    row = result.one()
+    return {
+        "total": row.total,
+        "ready": row.ready,
+        "processing": row.processing,
+        "pending": row.pending,
+        "failed": row.failed,
+        "total_chunks": row.total_chunks,
+    }
+
+
 # ── 文献详情 ──────────────────────────────────────────────────
 
 @router.get("/{doc_id}", response_model=KnowledgeDocumentOut)
