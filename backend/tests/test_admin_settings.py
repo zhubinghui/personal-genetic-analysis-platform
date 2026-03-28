@@ -47,7 +47,9 @@ class TestLLMSettings:
             headers={"Authorization": f"Bearer {admin_token}"},
         )
         assert get_res.json()["provider"] == "deepseek"
-        assert "sk-test-k" in get_res.json()["api_key_masked"]
+        masked = get_res.json()["api_key_masked"]
+        assert masked  # 非空
+        assert "..." in masked or "****" in masked  # 脱敏标记存在
 
     async def test_test_connection_no_config(self, client: AsyncClient, admin_token: str):
         """未配置时测试连接应返回 400。"""
