@@ -25,6 +25,7 @@ class UserOut(BaseModel):
     id: uuid.UUID
     email: str
     is_admin: bool = False
+    email_verified: bool = False
     consent_version: str | None
     consent_given_at: datetime | None
     created_at: datetime
@@ -81,3 +82,25 @@ class AdminSetRoleRequest(BaseModel):
 
 class AdminSetStatusRequest(BaseModel):
     is_active: bool
+
+
+# ── 邮箱验证 & 密码重置 ─────────────────
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("新密码至少 8 位")
+        return v

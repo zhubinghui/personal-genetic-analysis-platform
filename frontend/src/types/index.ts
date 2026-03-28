@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   is_admin: boolean;
+  email_verified: boolean;
   consent_version: string | null;
   consent_given_at: string | null;
   created_at: string;
