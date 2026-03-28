@@ -1,15 +1,16 @@
 "use client";
 
 import type { BenchmarkData, BenchmarkMetric } from "@/types";
+import { TermLabel } from "@/components/ui/InfoTip";
 
-const METRIC_LABELS: { key: keyof Pick<BenchmarkData, "dunedinpace" | "horvath_acceleration" | "grimage_acceleration" | "phenoage_acceleration">; label: string; unit: string }[] = [
-  { key: "dunedinpace", label: "DunedinPACE 衰老速率", unit: "" },
-  { key: "horvath_acceleration", label: "Horvath 年龄加速", unit: "岁" },
-  { key: "grimage_acceleration", label: "GrimAge 年龄加速", unit: "岁" },
-  { key: "phenoage_acceleration", label: "PhenoAge 年龄加速", unit: "岁" },
+const METRIC_LABELS: { key: keyof Pick<BenchmarkData, "dunedinpace" | "horvath_acceleration" | "grimage_acceleration" | "phenoage_acceleration">; label: string; term: string; unit: string }[] = [
+  { key: "dunedinpace", label: "DunedinPACE 衰老速率", term: "dunedinpace", unit: "" },
+  { key: "horvath_acceleration", label: "Horvath 年龄加速", term: "horvath", unit: "岁" },
+  { key: "grimage_acceleration", label: "GrimAge 年龄加速", term: "grimage", unit: "岁" },
+  { key: "phenoage_acceleration", label: "PhenoAge 年龄加速", term: "phenoage", unit: "岁" },
 ];
 
-function PercentileBar({ metric, label, unit }: { metric: BenchmarkMetric; label: string; unit: string }) {
+function PercentileBar({ metric, label, term, unit }: { metric: BenchmarkMetric; label: string; term?: string; unit: string }) {
   const pct = metric.percentile;
   if (pct == null || metric.value == null) return null;
 
@@ -20,7 +21,7 @@ function PercentileBar({ metric, label, unit }: { metric: BenchmarkMetric; label
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600">{label}</span>
+        <TermLabel term={term} className="text-gray-600">{label}</TermLabel>
         <span className={`font-semibold ${textColor}`}>
           优于 {pct.toFixed(0)}% 同龄人
         </span>
@@ -50,18 +51,21 @@ export default function CohortBenchmark({ benchmark }: { benchmark: BenchmarkDat
   return (
     <div className="bg-white rounded-2xl border p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-800">同龄人群对标</h2>
+        <h2 className="text-lg font-semibold text-gray-800">
+          <TermLabel term="percentile">同龄人群对标</TermLabel>
+        </h2>
         <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
           {benchmark.age_group} 岁 · {benchmark.cohort_size} 人样本
         </span>
       </div>
 
       <div className="space-y-4">
-        {METRIC_LABELS.map(({ key, label, unit }) => (
+        {METRIC_LABELS.map(({ key, label, term, unit }) => (
           <PercentileBar
             key={key}
             metric={benchmark[key]}
             label={label}
+            term={term}
             unit={unit}
           />
         ))}

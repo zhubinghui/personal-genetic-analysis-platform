@@ -4,6 +4,106 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* 平滑滚动 */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 选中文字颜色 */
+  ::selection {
+    @apply bg-brand-100 text-brand-900;
+  }
+}
+
+@layer components {
+  /* ── InfoTip 术语提示组件 ──────────────────────── */
+  .info-tip-wrapper {
+    @apply relative inline-flex items-center;
+  }
+
+  .info-tip-trigger {
+    @apply inline-flex items-center justify-center
+           w-4 h-4 ml-0.5
+           text-[10px] font-semibold leading-none
+           text-gray-400 bg-gray-100 border border-gray-200
+           rounded-full cursor-help select-none
+           transition-all duration-150;
+  }
+
+  .info-tip-trigger:hover {
+    @apply text-brand-600 bg-brand-50 border-brand-200;
+  }
+
+  .info-tip-content {
+    @apply invisible opacity-0
+           absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2
+           w-64 px-3 py-2.5
+           text-xs leading-relaxed text-gray-700
+           bg-white rounded-lg
+           border border-gray-100
+           shadow-lg shadow-gray-200/60
+           transition-all duration-200;
+    pointer-events: none;
+  }
+
+  .info-tip-wrapper:hover .info-tip-content {
+    @apply visible opacity-100;
+    pointer-events: auto;
+  }
+
+  .info-tip-title {
+    @apply block text-gray-900 font-semibold mb-0.5 text-xs;
+  }
+
+  /* 小三角箭头 */
+  .info-tip-content::after {
+    content: "";
+    @apply absolute top-full left-1/2 -translate-x-1/2
+           border-4 border-transparent border-t-white;
+  }
+  .info-tip-content::before {
+    content: "";
+    @apply absolute top-full left-1/2 -translate-x-1/2
+           border-4 border-transparent border-t-gray-100;
+    margin-top: 1px;
+  }
+
+  /* ── 卡片增强 ──────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100
+           shadow-sm shadow-gray-100/50
+           transition-shadow duration-200;
+  }
+  .card:hover {
+    @apply shadow-md shadow-gray-200/60;
+  }
+
+  /* ── 指标数字动画 ──────────────────────────────── */
+  .metric-value {
+    @apply font-bold tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── 品牌渐变背景 ──────────────────────────────── */
+  .gradient-brand {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0f9ff 100%);
+  }
+
+  /* ── 表格增强 ──────────────────────────────────── */
+  .data-table th {
+    @apply text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 text-left;
+  }
+  .data-table td {
+    @apply py-2.5 text-sm;
+  }
+  .data-table tbody tr {
+    @apply border-b border-gray-50 transition-colors;
+  }
+  .data-table tbody tr:hover {
+    @apply bg-gray-50/50;
   }
 }

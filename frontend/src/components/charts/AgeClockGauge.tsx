@@ -4,6 +4,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis,
   Radar, Legend, ResponsiveContainer, Tooltip,
 } from "recharts";
+import { TermLabel } from "@/components/ui/InfoTip";
 
 interface Props {
   horvathAge: number | null;
@@ -22,8 +23,10 @@ export default function AgeClockGauge({ horvathAge, grimAge, phenoAge, chronolog
   ].filter((d) => d["生物学年龄"] > 0);
 
   return (
-    <div className="bg-white rounded-2xl border p-6">
-      <h3 className="font-semibold text-gray-800 mb-4">衰老时钟对比</h3>
+    <div className="card p-6">
+      <h3 className="font-semibold text-gray-800 mb-4">
+        <TermLabel term="biological_age">衰老时钟对比</TermLabel>
+      </h3>
       <ResponsiveContainer width="100%" height={280}>
         <RadarChart data={data}>
           <PolarGrid />

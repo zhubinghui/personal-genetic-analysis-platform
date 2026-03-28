@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Recommendation } from "@/types";
+import InfoTip from "@/components/ui/InfoTip";
 
 const CATEGORY_ICONS: Record<string, string> = {
   diet: "🥗",
@@ -28,8 +29,9 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
           <h4 className="font-semibold text-gray-800">{rec.title}</h4>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${EVIDENCE_COLORS[rec.evidence_level]}`}>
+          <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium ${EVIDENCE_COLORS[rec.evidence_level]}`}>
             {rec.evidence_level} 级证据
+            <InfoTip term={`evidence_${rec.evidence_level.toLowerCase()}`} />
           </span>
           <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full text-xs">
             {rec.timeframe_weeks} 周
