@@ -87,18 +87,31 @@ async def test_user(client: AsyncClient) -> dict:
 
 
 @pytest_asyncio.fixture
-async def admin_user(_session_factory) -> User:
-    """直接在数据库创建管理员（API 无注册管理员端点）。"""
-    async with _session_factory() as session:
-        user = User(
-            email=f"admin_{uuid.uuid4().hex[:8]}@example.com",
-            password_hash=hash_password("AdminPass123!"),
-            is_admin=True,
-        )
-        session.add(user)
-        await session.commit()
-        await session.refresh(user)
-        return user
+async def admin_user(client: AsyncClient) -> dict:
+    """通过 API 注册 + psycopg2 同步提权为管理员。"""
+    import psycopg2
+
+    email = f"admin_{uuid.uuid4().hex[:8]}@example.com"
+    password = "AdminPass123!"
+
+    # 1. 通过 API 注册普通用户
+    res = await client.post("/api/v1/auth/register", json={"email": email, "password": password})
+    assert res.status_code == 201, f"注册管理员失败: {res.text}"
+
+    # 2. 用同步 psycopg2 设置 is_admin=true（绕过 asyncpg 事件循环问题）
+    sync_url = os.environ.get(
+        "DATABASE_URL_SYNC",
+        "postgresql://app_user:changeme@postgres:5432/genetic_platform",
+    )
+    conn = psycopg2.connect(sync_url)
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET is_admin=true WHERE email=%s", (email,))
+        conn.commit()
+    finally:
+        conn.close()
+
+    return {"email": email, "password": password, **res.json()}
 
 
 @pytest_asyncio.fixture
@@ -113,11 +126,11 @@ async def user_token(client: AsyncClient, test_user: dict) -> str:
 
 
 @pytest_asyncio.fixture
-async def admin_token(client: AsyncClient, admin_user: User) -> str:
+async def admin_token(client: AsyncClient, admin_user: dict) -> str:
     """管理员登录获取 token。"""
     res = await client.post("/api/v1/auth/login", json={
-        "email": admin_user.email,
-        "password": "AdminPass123!",
+        "email": admin_user["email"],
+        "password": admin_user["password"],
     })
     assert res.status_code == 200
     return res.json()["access_token"]
