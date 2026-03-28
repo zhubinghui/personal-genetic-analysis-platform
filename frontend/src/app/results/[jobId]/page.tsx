@@ -96,7 +96,7 @@ export default function ResultsPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm">
         <Link href="/dashboard" className="text-brand-600 hover:underline text-sm">
-          ← 返回控制台
+          ← 我的分析
         </Link>
         <div className="flex gap-3">
           <Link

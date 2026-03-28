@@ -68,7 +68,7 @@ export default function TrendsPage() {
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="text-brand-600 hover:underline text-sm">
-            ← 返回控制台
+            ← 我的分析
           </Link>
           <h1 className="text-lg font-semibold text-gray-800">历史趋势对比</h1>
         </div>

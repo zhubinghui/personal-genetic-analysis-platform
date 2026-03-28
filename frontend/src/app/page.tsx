@@ -1,6 +1,25 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Cookies from "js-cookie";
 
 export default function Home() {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const token = Cookies.get("access_token");
+    if (token) {
+      router.replace("/dashboard");
+    } else {
+      setChecking(false);
+    }
+  }, [router]);
+
+  if (checking) return null;
+
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8 bg-gradient-to-br from-brand-50 to-white">
       <div className="max-w-2xl text-center space-y-6">
