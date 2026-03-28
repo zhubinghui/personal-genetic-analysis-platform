@@ -29,6 +29,7 @@ PROVIDER_DEFAULTS = {
     "openai":   {"model": "gpt-4o", "base_url": ""},
     "deepseek": {"model": "deepseek-chat", "base_url": "https://api.deepseek.com"},
     "kimi":     {"model": "moonshot-v1-8k", "base_url": "https://api.moonshot.cn/v1"},
+    "qwen":     {"model": "qwen-plus", "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"},
 }
 
 
