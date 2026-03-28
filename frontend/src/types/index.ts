@@ -214,5 +214,19 @@ export interface ReportData {
     n_probes_after: number | null;
   };
   benchmark: BenchmarkData | null;
+  ai_interpretation: string | null;
   pdf_available?: boolean;
+}
+
+// ── Chatbot ─────────────────────────────────────────────
+
+export interface ChatSource {
+  document_title: string;
+  page_number: number | null;
+  relevance_score: number;
+}
+
+export interface ChatResponse {
+  answer: string;
+  sources: ChatSource[];
 }

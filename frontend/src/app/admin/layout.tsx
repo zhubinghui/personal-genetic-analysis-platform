@@ -33,6 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { href: "/admin/knowledge", label: "知识库文献" },
     { href: "/admin/users", label: "用户管理" },
+    { href: "/admin/settings", label: "系统设置" },
   ];
 
   return (

@@ -59,7 +59,8 @@ class ReportData:
     dimensions: dict | None
     recommendations: list[Recommendation]
     qc_summary: QCSummary
-    benchmark: dict | None = None  # BenchmarkData 序列化后的 dict
+    benchmark: dict | None = None
+    ai_interpretation: str | None = None  # LLM 生成的个性化深度解读
     pdf_available: bool = False
 
 
@@ -107,6 +108,41 @@ class ReportService:
 
         summary = self._build_summary(clocks)
 
+        # AI 深度解读（LLM 配置后启用）
+        ai_interpretation = None
+        try:
+            from app.services.llm_service import get_llm_provider
+            llm = await get_llm_provider(db)
+            if llm and ar.dunedinpace:
+                from app.services.knowledge_service import semantic_search
+                # 检索相关文献
+                query = f"epigenetic aging DunedinPACE {ar.dunedinpace:.3f} biological age intervention"
+                lit_results = await semantic_search(db, query=query, top_k=3, score_threshold=0.3)
+                lit_context = "\n".join(
+                    f"[{r.document_title}] {r.chunk_text[:300]}" for r in lit_results
+                ) if lit_results else "（知识库暂无相关文献）"
+
+                prompt_text = (
+                    f"用户实际年龄 {ar.chronological_age} 岁，"
+                    f"Horvath 生物学年龄 {ar.horvath_age:.1f if ar.horvath_age else '未知'} 岁，"
+                    f"DunedinPACE 衰老速率 {ar.dunedinpace:.3f}。\n"
+                    f"年龄加速值 {ar.biological_age_acceleration:+.1f if ar.biological_age_acceleration else '未知'} 岁。\n\n"
+                    f"参考文献：\n{lit_context}\n\n"
+                    f"请用 200-300 字为用户做通俗易懂的个性化衰老状态解读，"
+                    f"包含：整体评价、主要优势、需要关注的方面、最重要的 2-3 条可执行建议。"
+                    f"语气亲切专业，避免过度医学化。"
+                )
+                ai_interpretation = await llm.chat(
+                    messages=[
+                        {"role": "system", "content": "你是一位专业的衰老研究专家和健康管理顾问，擅长将复杂的表观遗传学数据转化为通俗易懂的健康建议。"},
+                        {"role": "user", "content": prompt_text},
+                    ],
+                    temperature=0.4,
+                    max_tokens=800,
+                )
+        except Exception:
+            pass  # LLM 未配置或调用失败时静默跳过
+
         # 同龄对标
         benchmark_data = None
         try:
@@ -130,6 +166,7 @@ class ReportService:
                 n_probes_after=ar.n_probes_after,
             ),
             benchmark=benchmark_data,
+            ai_interpretation=ai_interpretation,
         )
 
         # 生成 PDF 并存入 MinIO

@@ -11,8 +11,10 @@ from app.api.v1.samples import router as samples_router
 from app.api.v1.jobs import router as jobs_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.oauth import router as oauth_router
+from app.api.v1.chat import router as chat_router
 from app.api.v1.admin.knowledge import router as admin_knowledge_router
 from app.api.v1.admin.users import router as admin_users_router
+from app.api.v1.admin.settings import router as admin_settings_router
 from app.api.v1.trends import router as trends_router
 from app.config import settings
 from app.database import AsyncSessionLocal
@@ -94,7 +96,9 @@ app.include_router(jobs_router, prefix="/api/v1")
 app.include_router(reports_router, prefix="/api/v1")
 app.include_router(admin_knowledge_router, prefix="/api/v1")
 app.include_router(admin_users_router, prefix="/api/v1")
+app.include_router(admin_settings_router, prefix="/api/v1")
 app.include_router(trends_router, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["系统"])

@@ -10,6 +10,7 @@ import DunedinPaceRadar from "@/components/charts/DunedinPaceRadar";
 import AgingDimensionBars from "@/components/charts/AgingDimensionBars";
 import RecommendationCard from "@/components/report/RecommendationCard";
 import CohortBenchmark from "@/components/report/CohortBenchmark";
+import ChatBot from "@/components/report/ChatBot";
 import { TermLabel } from "@/components/ui/InfoTip";
 import type { ReportData } from "@/types";
 
@@ -161,6 +162,22 @@ export default function ResultsPage() {
           ))}
         </div>
 
+        {/* AI 深度解读 */}
+        {report.ai_interpretation && (
+          <div className="card p-6 space-y-3">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <span className="text-xl">🤖</span>
+              AI 深度解读
+            </h2>
+            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+              {report.ai_interpretation}
+            </p>
+            <p className="text-xs text-gray-400">
+              由 AI 基于您的分析数据和学术文献生成，仅供参考
+            </p>
+          </div>
+        )}
+
         {/* 同龄人群对标 */}
         {report.benchmark && <CohortBenchmark benchmark={report.benchmark} />}
 
@@ -194,6 +211,9 @@ export default function ResultsPage() {
           </p>
         </div>
       </main>
+
+      {/* AI 助手悬浮按钮 */}
+      <ChatBot jobId={jobId} />
     </div>
   );
 }

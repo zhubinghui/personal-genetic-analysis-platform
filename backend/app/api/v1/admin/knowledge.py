@@ -2,26 +2,32 @@
 管理员知识库 API
 
 端点：
-  POST   /admin/knowledge/upload        — 上传文献文件
-  GET    /admin/knowledge               — 分页列出文献
-  GET    /admin/knowledge/{doc_id}      — 获取文献详情
-  DELETE /admin/knowledge/{doc_id}      — 删除文献
-  POST   /admin/knowledge/{doc_id}/reprocess — 重新处理（重新嵌入）
-  POST   /admin/knowledge/search        — 语义搜索测试
+  POST   /admin/knowledge              — 上传单文件（含元数据）
+  POST   /admin/knowledge/upload-batch — 批量上传（多文件 + ZIP）
+  GET    /admin/knowledge              — 分页列出文献
+  GET    /admin/knowledge/{doc_id}     — 获取文献详情
+  GET    /admin/knowledge/{doc_id}/preview — PDF 在线预览
+  DELETE /admin/knowledge/{doc_id}     — 删除文献
+  POST   /admin/knowledge/{doc_id}/reprocess — 重新处理
+  POST   /admin/knowledge/search       — 语义搜索测试
 """
 
+import io
 import uuid
+import zipfile
 from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
+    File,
     Form,
     HTTPException,
     UploadFile,
     status,
 )
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_admin_user
@@ -250,3 +256,165 @@ async def knowledge_search(
         score_threshold=request.score_threshold,
     )
     return SearchResponse(query=request.query, results=results)
+
+
+# ── 批量上传 ──────────────────────────────────────────────────
+
+@router.post("/upload-batch")
+async def upload_batch(
+    background_tasks: BackgroundTasks,
+    files: list[UploadFile] = File(...),
+    current_admin: Annotated[User, Depends(get_admin_user)] = None,
+    db: Annotated[AsyncSession, Depends(get_db)] = None,
+    storage: Annotated[StorageService, Depends(get_storage)] = None,
+) -> dict:
+    """
+    批量上传文献文件。支持：
+    - 多个 PDF/DOCX/TXT 文件同时上传
+    - ZIP 压缩包（自动解压提取内部文件）
+    - 自动从 PDF 元数据提取标题/作者/关键词
+    """
+    from app.services.document_processor import extract_pdf_metadata
+
+    results = []
+    all_files: list[tuple[str, bytes, str]] = []  # (filename, bytes, ext)
+
+    for upload_file in files:
+        file_bytes = await upload_file.read()
+        filename = upload_file.filename or "unknown"
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+        if ext == "zip":
+            # 解压 ZIP，提取内部文件
+            try:
+                with zipfile.ZipFile(io.BytesIO(file_bytes)) as zf:
+                    for name in zf.namelist():
+                        if name.startswith("__MACOSX") or name.startswith("."):
+                            continue
+                        inner_ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+                        if inner_ext in ALLOWED_TYPES:
+                            inner_bytes = zf.read(name)
+                            # 使用文件名（去掉目录前缀）
+                            inner_name = name.split("/")[-1]
+                            all_files.append((inner_name, inner_bytes, inner_ext))
+            except zipfile.BadZipFile:
+                results.append({"filename": filename, "status": "error", "error": "无效的 ZIP 文件"})
+                continue
+        elif ext in ALLOWED_TYPES:
+            all_files.append((filename, file_bytes, ext))
+        else:
+            results.append({"filename": filename, "status": "error", "error": f"不支持的文件类型 .{ext}"})
+
+    # 处理每个文件
+    for filename, file_bytes, ext in all_files:
+        if len(file_bytes) > MAX_FILE_SIZE:
+            results.append({"filename": filename, "status": "error", "error": "文件超过 50MB"})
+            continue
+
+        doc_id = uuid.uuid4()
+        object_key = f"knowledge/{doc_id}/{filename}"
+
+        # 存储到 MinIO
+        import asyncio as aio
+        await aio.to_thread(
+            storage.client.put_object,
+            settings.minio_bucket_knowledge,
+            object_key,
+            io.BytesIO(file_bytes),
+            len(file_bytes),
+            content_type="application/octet-stream",
+        )
+
+        # 自动提取元数据（仅 PDF）
+        title = filename.rsplit(".", 1)[0].replace("-", " ").replace("_", " ")
+        authors = None
+        keywords = None
+
+        if ext == "pdf":
+            meta = extract_pdf_metadata(file_bytes)
+            if meta.title:
+                title = meta.title
+            if meta.authors:
+                authors = meta.authors
+            if meta.keywords:
+                keywords = meta.keywords
+
+        tag_list = [t.strip() for t in (keywords or "").split(",") if t.strip()] or None
+
+        doc = KnowledgeDocument(
+            id=doc_id,
+            title=title[:500],
+            authors=authors,
+            tags=tag_list,
+            file_key=object_key,
+            file_name=filename,
+            file_type=ext,
+            file_size_bytes=len(file_bytes),
+            status="pending",
+            uploaded_by=current_admin.id,
+        )
+        db.add(doc)
+
+        # 后台向量化
+        background_tasks.add_task(
+            process_document_background, doc_id, file_bytes, ext, AsyncSessionLocal,
+        )
+
+        results.append({
+            "filename": filename,
+            "status": "ok",
+            "doc_id": str(doc_id),
+            "title": title[:100],
+            "authors": authors,
+        })
+
+    await db.commit()
+    return {
+        "total": len(results),
+        "success": sum(1 for r in results if r["status"] == "ok"),
+        "files": results,
+    }
+
+
+# ── PDF 在线预览 ──────────────────────────────────────────────
+
+@router.get("/{doc_id}/preview")
+async def preview_document(
+    doc_id: uuid.UUID,
+    _: Annotated[User, Depends(get_admin_user)] = None,
+    db: Annotated[AsyncSession, Depends(get_db)] = None,
+    storage: Annotated[StorageService, Depends(get_storage)] = None,
+):
+    """从 MinIO 流式传输原始文件（用于 PDF.js 在线预览）。"""
+    doc = await get_document(db, doc_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="文献不存在")
+
+    import asyncio
+    try:
+        response = await asyncio.to_thread(
+            storage.client.get_object,
+            settings.minio_bucket_knowledge,
+            doc.file_key,
+        )
+        file_bytes = response.read()
+        response.close()
+        response.release_conn()
+    except Exception:
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    content_type = {
+        "pdf": "application/pdf",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "txt": "text/plain; charset=utf-8",
+        "md": "text/plain; charset=utf-8",
+    }.get(doc.file_type, "application/octet-stream")
+
+    return StreamingResponse(
+        io.BytesIO(file_bytes),
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{doc.file_name}"',
+            "Cache-Control": "public, max-age=3600",
+        },
+    )
