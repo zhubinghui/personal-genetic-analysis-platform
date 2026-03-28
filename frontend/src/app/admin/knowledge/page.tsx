@@ -49,9 +49,11 @@ export default function KnowledgeListPage() {
 
   // 认证失败标记：阻止轮询继续刷 401
   const [authFailed, setAuthFailed] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
-  const loadDocs = useCallback(async (p: number = 1) => {
-    setLoading(true);
+  // silent=true 时不显示 loading 闪烁（后台静默刷新）
+  const loadDocs = useCallback(async (p: number = 1, silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const skip = (p - 1) * pageSize;
@@ -59,15 +61,16 @@ export default function KnowledgeListPage() {
       setDocs(res.items);
       setTotal(res.total);
       setAuthFailed(false);
+      setInitialLoaded(true);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
         setAuthFailed(true);
         setError("登录已过期，请重新登录");
-      } else {
+      } else if (!silent) {
         setError(e instanceof ApiError ? e.message : "加载失败");
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -81,8 +84,9 @@ export default function KnowledgeListPage() {
   useEffect(() => {
     loadDocs(page);
     loadStats();
+    // 轮询使用 silent 模式：后台静默刷新，不触发 loading 状态，不改变排序体验
     const timer = setInterval(() => {
-      if (!authFailed) { loadDocs(page); loadStats(); }
+      if (!authFailed) { loadDocs(page, true); loadStats(); }
     }, 10_000);
     return () => clearInterval(timer);
   }, [loadDocs, loadStats, authFailed, page]);
