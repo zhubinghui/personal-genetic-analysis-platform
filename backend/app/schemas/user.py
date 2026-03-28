@@ -24,6 +24,7 @@ class UserLogin(BaseModel):
 class UserOut(BaseModel):
     id: uuid.UUID
     email: str
+    is_admin: bool = False
     consent_version: str | None
     consent_given_at: datetime | None
     created_at: datetime
@@ -39,3 +40,44 @@ class TokenResponse(BaseModel):
 
 class ConsentRequest(BaseModel):
     version: str = "1.0"
+
+
+# ── 用户资料编辑 ─────────────────────────────
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("新密码至少 8 位")
+        return v
+
+
+# ── 管理员用户管理 ───────────────────────────
+
+class AdminUserOut(BaseModel):
+    id: uuid.UUID
+    email: str
+    is_active: bool
+    is_admin: bool
+    consent_version: str | None
+    consent_given_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AdminUserListResponse(BaseModel):
+    total: int
+    items: list[AdminUserOut]
+
+
+class AdminSetRoleRequest(BaseModel):
+    is_admin: bool
+
+
+class AdminSetStatusRequest(BaseModel):
+    is_active: bool

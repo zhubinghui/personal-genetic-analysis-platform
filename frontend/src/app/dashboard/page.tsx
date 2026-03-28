@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi, sampleApi, ApiError } from "@/lib/api";
+import { useTokenRefresh } from "@/lib/tokenRefresh";
+import Navbar from "@/components/layout/Navbar";
 import type { User, Sample } from "@/types";
 
 export default function DashboardPage() {
@@ -11,6 +13,9 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [samples, setSamples] = useState<Sample[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Token 自动刷新
+  useTokenRefresh();
 
   useEffect(() => {
     const init = async () => {
@@ -31,47 +36,60 @@ export default function DashboardPage() {
     init();
   }, [router]);
 
-  const handleLogout = () => {
-    authApi.logout();
-    router.push("/login");
-  };
-
   if (loading) return <div className="min-h-screen flex items-center justify-center">加载中...</div>;
+
+  // 统计概览
+  const completedSamples = samples.filter((s) => s.latest_job_status === "completed");
+  const latestCompleted = completedSamples[0]; // 已按 uploaded_at DESC 排序
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-brand-700">基因抗衰老分析平台</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{user?.email}</span>
-          <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-gray-700">
-            退出
-          </button>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="max-w-4xl mx-auto py-10 px-4 space-y-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">我的分析记录</h2>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/trends"
-              className="px-4 py-2 border border-brand-600 text-brand-600 rounded-lg hover:bg-brand-50 text-sm transition"
-            >
-              📈 历史对比
-            </Link>
-            <Link
-              href="/upload"
-              className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm transition"
-            >
-              上传新数据
-            </Link>
+      <main className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+        {/* 数据概览卡片 */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="card p-4 text-center">
+            <p className="text-2xl metric-value text-brand-600">{samples.length}</p>
+            <p className="text-xs text-gray-400 mt-1">总采样次数</p>
+          </div>
+          <div className="card p-4 text-center">
+            <p className="text-2xl metric-value text-green-600">{completedSamples.length}</p>
+            <p className="text-xs text-gray-400 mt-1">已完成分析</p>
+          </div>
+          <div className="card p-4 text-center">
+            <p className="text-2xl metric-value text-gray-800">
+              {latestCompleted?.chronological_age ?? "—"}<span className="text-sm font-normal text-gray-400"> 岁</span>
+            </p>
+            <p className="text-xs text-gray-400 mt-1">最新采样年龄</p>
+          </div>
+          <div className="card p-4 text-center">
+            <p className="text-2xl metric-value text-blue-600">
+              {completedSamples.length > 0 ? "可用" : "—"}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              <Link href="/trends" className="text-brand-600 hover:underline">
+                趋势报告 →
+              </Link>
+            </p>
           </div>
         </div>
 
+        {/* 样本列表 */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-800">我的分析记录</h2>
+          <Link
+            href="/upload"
+            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 text-sm transition shadow-sm"
+          >
+            上传新数据
+          </Link>
+        </div>
+
         {samples.length === 0 ? (
-          <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center space-y-3">
-            <p className="text-gray-500">暂无分析记录</p>
+          <div className="card border-2 border-dashed border-gray-200 p-12 text-center space-y-3">
+            <p className="text-3xl">📤</p>
+            <p className="text-gray-500 font-medium">暂无分析记录</p>
             <Link href="/upload" className="text-brand-600 hover:underline text-sm">
               上传您的第一份 DNA 甲基化数据 →
             </Link>
@@ -79,7 +97,7 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-3">
             {samples.map((sample) => (
-              <div key={sample.id} className="bg-white rounded-xl border p-5 flex items-center justify-between">
+              <div key={sample.id} className="card p-5 flex items-center justify-between">
                 <div>
                   <p className="font-medium text-gray-800">
                     {sample.array_type} 芯片数据
