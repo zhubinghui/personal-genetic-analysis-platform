@@ -41,7 +41,6 @@ dependencies = [
     "anthropic>=0.30.0",
     "openai>=1.30.0",
     # 邮件 & 短信
-    "resend>=2.0.0",
     "alibabacloud-dysmsapi20170525>=3.0.0",
     "alibabacloud-tea-openapi>=0.3.0",
     "redis[hiredis]>=5.0.0",

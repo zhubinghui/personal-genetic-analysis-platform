@@ -34,8 +34,9 @@ class Settings(BaseSettings):
     jwt_access_expire_minutes: int = 60
     jwt_refresh_expire_days: int = 30
 
-    # Resend 邮件 API
-    resend_api_key: str = ""
+    # 阿里云邮件推送（DirectMail）
+    # aliyun_access_key_id / aliyun_access_key_secret 复用下方阿里云通用密钥
+    aliyun_dm_account_name: str = ""   # 控制台已验证的发信地址，如 noreply@yourdomain.com
     email_from_address: str = "noreply@yourdomain.com"
     email_from_name: str = "基因抗衰老分析平台"
 
