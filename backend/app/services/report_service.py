@@ -16,8 +16,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.pdfmetrics import registerFontFamily
-from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.platypus import (
     HRFlowable,
     Paragraph,
@@ -27,63 +26,23 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-# ── 注册中文字体（Noto Sans CJK） ─────────────────────────────
+# ── 注册中文字体（ReportLab 内置 CID 字体，无需外部文件） ────────
 _CJK_FONT_REGISTERED = False
+# STSong-Light: ReportLab 内置的简体中文宋体 CID 字体
+_CJK_FONT_NAME = "STSong-Light"
+
 
 def _ensure_cjk_font():
-    """注册 Noto Sans CJK 字体，支持中文 PDF 渲染。"""
+    """注册 STSong-Light CID 字体，支持中文 PDF 渲染。"""
     global _CJK_FONT_REGISTERED
     if _CJK_FONT_REGISTERED:
         return
-    import glob
-    # Noto Sans CJK 在不同系统中路径可能不同
-    search_paths = [
-        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-        "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",
-        "/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf",
-        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-    ]
-    # 也搜索常见目录
-    for pattern in [
-        "/usr/share/fonts/**/NotoSansCJK*Regular*",
-        "/usr/share/fonts/**/NotoSans*CJK*Regular*",
-    ]:
-        search_paths.extend(glob.glob(pattern, recursive=True))
-
-    font_path = None
-    for p in search_paths:
-        import os
-        if os.path.exists(p):
-            font_path = p
-            break
-
-    if font_path:
-        if font_path.endswith(".ttc"):
-            pdfmetrics.registerFont(TTFont("NotoSansCJK", font_path, subfontIndex=0))
-            pdfmetrics.registerFont(TTFont("NotoSansCJK-Bold", font_path, subfontIndex=3))
-        else:
-            pdfmetrics.registerFont(TTFont("NotoSansCJK", font_path))
-            # 尝试找 Bold 变体
-            bold_path = font_path.replace("Regular", "Bold")
-            if os.path.exists(bold_path):
-                pdfmetrics.registerFont(TTFont("NotoSansCJK-Bold", bold_path))
-            else:
-                pdfmetrics.registerFont(TTFont("NotoSansCJK-Bold", font_path))
-    else:
+    try:
+        pdfmetrics.registerFont(UnicodeCIDFont(_CJK_FONT_NAME))
+        _CJK_FONT_REGISTERED = True
+    except Exception:
         import structlog
-        structlog.get_logger().warning("未找到 Noto Sans CJK 字体，PDF 中文可能显示异常")
-        # Fallback: 不注册，使用 Helvetica（中文会显示为方块）
-        return
-
-    # 注册字体族，使 <b> <i> 标签在 Paragraph 中正确映射
-    registerFontFamily(
-        "NotoSansCJK",
-        normal="NotoSansCJK",
-        bold="NotoSansCJK-Bold",
-        italic="NotoSansCJK",
-        boldItalic="NotoSansCJK-Bold",
-    )
-    _CJK_FONT_REGISTERED = True
+        structlog.get_logger().warning("CID 字体注册失败，PDF 中文可能显示异常")
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -280,8 +239,8 @@ class ReportService:
         styles = getSampleStyleSheet()
 
         # 根据是否成功注册 CJK 字体选择字体名称
-        font_name = "NotoSansCJK" if _CJK_FONT_REGISTERED else "Helvetica"
-        font_bold = "NotoSansCJK-Bold" if _CJK_FONT_REGISTERED else "Helvetica-Bold"
+        font_name = _CJK_FONT_NAME if _CJK_FONT_REGISTERED else "Helvetica"
+        font_bold = _CJK_FONT_NAME if _CJK_FONT_REGISTERED else "Helvetica-Bold"
 
         # 覆盖默认样式的字体
         for style_name in ["Normal", "Heading1", "Heading2", "Heading3", "Title", "BodyText"]:
