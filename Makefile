@@ -1,4 +1,4 @@
-.PHONY: up down restart logs build migrate shell-db shell-back shell-worker test-back test-r lint-back setup keys backup restore
+.PHONY: up down restart logs build migrate shell-db shell-back shell-worker test-back test-r test-analysis lint-back setup keys backup restore
 
 # ── 基础操作 ─────────────────────────────────────────────────
 up:
@@ -42,6 +42,9 @@ test-back:
 
 test-r:
 	docker compose exec worker Rscript analysis/tests/run_tests.R
+
+test-analysis:
+	cd analysis && python -m pytest tests/ -v
 
 # ── 代码质量 ─────────────────────────────────────────────────
 lint-back:

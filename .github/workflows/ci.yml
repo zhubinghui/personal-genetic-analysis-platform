@@ -85,6 +85,22 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v --tb=short -x
 
+  # ── 分析引擎测试 ────────────────────────────────────────────
+  test-analysis:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: analysis
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: pip install pytest pytest-asyncio structlog cryptography minio
+      - name: Run analysis tests
+        run: python -m pytest tests/ -v --tb=short -x
+
   # ── 前端检查 ──────────────────────────────────────────────
   check-frontend:
     runs-on: ubuntu-latest
@@ -108,7 +124,7 @@ jobs:
   # ── Docker 构建验证 ───────────────────────────────────────
   build-docker:
     runs-on: ubuntu-latest
-    needs: [lint-backend, test-backend, check-frontend]
+    needs: [lint-backend, test-backend, test-analysis, check-frontend]
     steps:
       - uses: actions/checkout@v4
       - name: Build backend image
