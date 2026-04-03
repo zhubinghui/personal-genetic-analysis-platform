@@ -15,6 +15,9 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.pdfmetrics import registerFontFamily
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     HRFlowable,
     Paragraph,
@@ -23,6 +26,64 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+
+# ── 注册中文字体（Noto Sans CJK） ─────────────────────────────
+_CJK_FONT_REGISTERED = False
+
+def _ensure_cjk_font():
+    """注册 Noto Sans CJK 字体，支持中文 PDF 渲染。"""
+    global _CJK_FONT_REGISTERED
+    if _CJK_FONT_REGISTERED:
+        return
+    import glob
+    # Noto Sans CJK 在不同系统中路径可能不同
+    search_paths = [
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",
+        "/usr/share/fonts/noto-cjk/NotoSansCJKsc-Regular.otf",
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    ]
+    # 也搜索常见目录
+    for pattern in [
+        "/usr/share/fonts/**/NotoSansCJK*Regular*",
+        "/usr/share/fonts/**/NotoSans*CJK*Regular*",
+    ]:
+        search_paths.extend(glob.glob(pattern, recursive=True))
+
+    font_path = None
+    for p in search_paths:
+        import os
+        if os.path.exists(p):
+            font_path = p
+            break
+
+    if font_path:
+        if font_path.endswith(".ttc"):
+            pdfmetrics.registerFont(TTFont("NotoSansCJK", font_path, subfontIndex=0))
+            pdfmetrics.registerFont(TTFont("NotoSansCJK-Bold", font_path, subfontIndex=3))
+        else:
+            pdfmetrics.registerFont(TTFont("NotoSansCJK", font_path))
+            # 尝试找 Bold 变体
+            bold_path = font_path.replace("Regular", "Bold")
+            if os.path.exists(bold_path):
+                pdfmetrics.registerFont(TTFont("NotoSansCJK-Bold", bold_path))
+            else:
+                pdfmetrics.registerFont(TTFont("NotoSansCJK-Bold", font_path))
+    else:
+        import structlog
+        structlog.get_logger().warning("未找到 Noto Sans CJK 字体，PDF 中文可能显示异常")
+        # Fallback: 不注册，使用 Helvetica（中文会显示为方块）
+        return
+
+    # 注册字体族，使 <b> <i> 标签在 Paragraph 中正确映射
+    registerFontFamily(
+        "NotoSansCJK",
+        normal="NotoSansCJK",
+        bold="NotoSansCJK-Bold",
+        italic="NotoSansCJK",
+        boldItalic="NotoSansCJK-Bold",
+    )
+    _CJK_FONT_REGISTERED = True
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -208,6 +269,8 @@ class ReportService:
         return headline + accel_str
 
     def _render_pdf(self, report: ReportData) -> bytes:
+        _ensure_cjk_font()
+
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
             buffer, pagesize=A4,
@@ -215,16 +278,27 @@ class ReportService:
             topMargin=2 * cm, bottomMargin=2 * cm,
         )
         styles = getSampleStyleSheet()
+
+        # 根据是否成功注册 CJK 字体选择字体名称
+        font_name = "NotoSansCJK" if _CJK_FONT_REGISTERED else "Helvetica"
+        font_bold = "NotoSansCJK-Bold" if _CJK_FONT_REGISTERED else "Helvetica-Bold"
+
+        # 覆盖默认样式的字体
+        for style_name in ["Normal", "Heading1", "Heading2", "Heading3", "Title", "BodyText"]:
+            if style_name in styles:
+                styles[style_name].fontName = font_name
+
         story = []
 
         # 标题
         title_style = ParagraphStyle(
-            "Title", parent=styles["Title"], fontSize=18, spaceAfter=12
+            "ReportTitle", parent=styles["Title"], fontSize=18, spaceAfter=12,
+            fontName=font_bold,
         )
         story.append(Paragraph("基因抗衰老分析报告", title_style))
         story.append(Paragraph(f"生成时间：{report.generated_at[:19].replace('T', ' ')}", styles["Normal"]))
         story.append(Spacer(1, 0.5 * cm))
-        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#22c55e")))
+        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#0284c7")))
         story.append(Spacer(1, 0.5 * cm))
 
         # 总结
@@ -246,10 +320,11 @@ class ReportService:
         ]
         t = Table(clock_data, colWidths=[5 * cm, 3.5 * cm, 8.5 * cm])
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#16a34a")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0284c7")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0fdf4")]),
+            ("FONTNAME", (0, 0), (-1, 0), font_bold),
+            ("FONTNAME", (0, 1), (-1, -1), font_name),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f0f9ff")]),
             ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d1d5db")),
             ("FONTSIZE", (0, 0), (-1, -1), 9),
             ("PADDING", (0, 0), (-1, -1), 6),
