@@ -84,21 +84,26 @@ class AnalysisPipeline:
                 "chronological_age": sample.chronological_age or 40,
             }
 
-            with ThreadPoolExecutor(max_workers=4) as pool:
-                fut_horvath    = pool.submit(run_r_script, "horvath_clock.R", clock_args)
-                fut_grimage    = pool.submit(run_r_script, "grimage.R", grimage_args)
-                fut_phenoage   = pool.submit(run_r_script, "phenoage.R", clock_args)
-                fut_dunedinpace = pool.submit(run_r_script, "dunedinpace.R", clock_args)
+            try:
+                with ThreadPoolExecutor(max_workers=4) as pool:
+                    fut_horvath    = pool.submit(run_r_script, "horvath_clock.R", clock_args)
+                    fut_grimage    = pool.submit(run_r_script, "grimage.R", grimage_args)
+                    fut_phenoage   = pool.submit(run_r_script, "phenoage.R", clock_args)
+                    fut_dunedinpace = pool.submit(run_r_script, "dunedinpace.R", clock_args)
 
-                horvath_raw     = fut_horvath.result()
-                grimage_raw     = fut_grimage.result()
-                phenoage_raw    = fut_phenoage.result()
-                dunedinpace_raw = fut_dunedinpace.result()
+                    horvath_raw     = fut_horvath.result()
+                    grimage_raw     = fut_grimage.result()
+                    phenoage_raw    = fut_phenoage.result()
+                    dunedinpace_raw = fut_dunedinpace.result()
 
-            clocks = parse_clock_results(
-                horvath_raw, grimage_raw, phenoage_raw, dunedinpace_raw
-            )
-            accel = compute_acceleration(clocks.horvath_age, sample.chronological_age)
+                clocks = parse_clock_results(
+                    horvath_raw, grimage_raw, phenoage_raw, dunedinpace_raw
+                )
+                accel = compute_acceleration(clocks.horvath_age, sample.chronological_age)
+            except Exception as e:
+                error_msg = f"衰老时钟计算失败: {type(e).__name__}: {e}"
+                await self._fail_job(job_uuid, error_msg)
+                raise
 
         # ── Stage 6: 持久化结果 ──────────────────────────────────
         await self._update_job(job_uuid, stage="reporting")

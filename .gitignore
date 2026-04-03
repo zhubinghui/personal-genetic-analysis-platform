@@ -67,3 +67,6 @@ minio_data/
 
 # Postgres local data
 pgdata/
+
+# Backups
+backups/

@@ -1,4 +1,4 @@
-.PHONY: up down restart logs build migrate shell-db shell-back shell-worker test-back test-r lint-back setup keys
+.PHONY: up down restart logs build migrate shell-db shell-back shell-worker test-back test-r lint-back setup keys backup restore
 
 # ── 基础操作 ─────────────────────────────────────────────────
 up:
@@ -46,6 +46,14 @@ test-r:
 # ── 代码质量 ─────────────────────────────────────────────────
 lint-back:
 	docker compose exec backend ruff check app/ && mypy app/
+
+# ── 备份与恢复 ────────────────────────────────────────────────
+backup:
+	./scripts/backup-postgres.sh
+
+restore:
+	@test -n "$(DUMP)" || (echo "用法: make restore DUMP=backups/xxx.dump.gz" && exit 1)
+	./scripts/restore-postgres.sh $(DUMP)
 
 # ── 初始化 ───────────────────────────────────────────────────
 setup: keys

@@ -323,6 +323,21 @@ EOF
 }
 
 # ═══════════════════════════════════════════════════════════════
+# 步骤 9.5：配置数据库自动备份（每天凌晨 3 点）
+# ═══════════════════════════════════════════════════════════════
+setup_backup_cron() {
+    info "配置数据库自动备份..."
+    BACKUP_SCRIPT="${DEPLOY_DIR}/scripts/backup-postgres.sh"
+    chmod +x "$BACKUP_SCRIPT"
+
+    # 添加 crontab 条目（幂等：先删除旧条目再添加）
+    (crontab -l 2>/dev/null | grep -v "backup-postgres.sh" || true; \
+     echo "0 3 * * * ${BACKUP_SCRIPT} >> /var/log/genetic-backup.log 2>&1") | crontab -
+
+    info "数据库备份已配置：每天 03:00 自动执行"
+}
+
+# ═══════════════════════════════════════════════════════════════
 # 步骤 10：健康检查
 # ═══════════════════════════════════════════════════════════════
 health_check() {
@@ -353,6 +368,7 @@ main() {
     run_migrations
     setup_nginx_https
     setup_autostart
+    setup_backup_cron
     health_check
 
     echo ""
