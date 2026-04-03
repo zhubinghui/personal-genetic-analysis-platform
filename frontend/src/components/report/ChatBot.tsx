@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Dna, Microscope, X, MessageCircle, Send } from "lucide-react";
 import { chatApi, ApiError } from "@/lib/api";
 import type { ChatSource } from "@/types";
 
@@ -51,7 +52,7 @@ export default function ChatBot({ jobId }: { jobId?: string }) {
                    flex items-center justify-center text-2xl"
         title="AI 助手"
       >
-        {open ? "✕" : "💬"}
+        {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
 
       {/* 对话面板 */}
@@ -60,7 +61,7 @@ export default function ChatBot({ jobId }: { jobId?: string }) {
                         shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col z-50 overflow-hidden">
           {/* 头部 */}
           <div className="px-4 py-3 bg-brand-600 text-white flex items-center gap-2">
-            <span className="text-lg">🧬</span>
+            <Dna className="w-5 h-5" />
             <div>
               <p className="font-semibold text-sm">AI 衰老研究助手</p>
               <p className="text-xs text-brand-100">基于知识库文献为您解答</p>
@@ -71,7 +72,7 @@ export default function ChatBot({ jobId }: { jobId?: string }) {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="text-center text-gray-400 text-sm py-8 space-y-2">
-                <p className="text-2xl">🔬</p>
+                <Microscope className="w-8 h-8 text-gray-300" />
                 <p>您好！我可以基于学术文献为您解答衰老相关问题。</p>
                 <div className="space-y-1 pt-2">
                   {["DunedinPACE 高于 1.0 意味着什么？", "如何通过饮食减缓表观遗传衰老？", "Horvath 时钟的原理是什么？"].map((q) => (
@@ -140,7 +141,7 @@ export default function ChatBot({ jobId }: { jobId?: string }) {
                 className="px-3 py-2 bg-brand-600 text-white rounded-xl text-sm
                            hover:bg-brand-700 disabled:opacity-50 transition"
               >
-                发送
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </div>

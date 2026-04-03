@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Dna, Microscope, BarChart3, ClipboardList, Lock } from "lucide-react";
 import { authApi, ApiError } from "@/lib/api";
 import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 
@@ -36,26 +37,29 @@ export default function LoginPage() {
       {/* 左侧品牌区域 */}
       <div className="hidden lg:flex lg:w-1/2 gradient-brand flex-col justify-center px-16 relative overflow-hidden">
         <div className="relative z-10 max-w-lg">
-          <div className="text-5xl mb-6">🧬</div>
+          <Dna className="w-12 h-12 text-brand-600 mb-6" />
           <h1 className="text-3xl font-bold text-gray-800 mb-4">基因抗衰老分析平台</h1>
           <p className="text-lg text-gray-600 mb-8 leading-relaxed">
             上传血液 DNA 甲基化数据，获取个性化的生物学年龄评估与循证抗衰老建议。
           </p>
           <div className="space-y-3">
             {[
-              { icon: "🔬", title: "4 大衰老时钟", desc: "Horvath、GrimAge、PhenoAge、DunedinPACE" },
-              { icon: "📊", title: "19 维度深度分析", desc: "心血管、代谢、免疫等 9 大系统分项评估" },
-              { icon: "📋", title: "循证干预建议", desc: "基于 PubMed 文献的个性化抗衰老方案" },
-              { icon: "🔒", title: "隐私优先设计", desc: "AES-256 加密 + 假名化数据架构" },
-            ].map((item) => (
+              { icon: Microscope, title: "4 大衰老时钟", desc: "Horvath、GrimAge、PhenoAge、DunedinPACE" },
+              { icon: BarChart3, title: "19 维度深度分析", desc: "心血管、代谢、免疫等 9 大系统分项评估" },
+              { icon: ClipboardList, title: "循证干预建议", desc: "基于 PubMed 文献的个性化抗衰老方案" },
+              { icon: Lock, title: "隐私优先设计", desc: "AES-256 加密 + 假名化数据架构" },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
               <div key={item.title} className="flex items-start gap-3 bg-white/60 backdrop-blur rounded-xl p-3">
-                <span className="text-xl mt-0.5">{item.icon}</span>
+                <Icon className="w-5 h-5 text-brand-600 mt-0.5 shrink-0" />
                 <div>
                   <p className="font-medium text-gray-800 text-sm">{item.title}</p>
                   <p className="text-xs text-gray-500">{item.desc}</p>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         <div className="absolute -right-20 -top-20 w-80 h-80 bg-brand-200/30 rounded-full" />
@@ -66,7 +70,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-6 bg-white">
         <div className="w-full max-w-sm">
           <div className="lg:hidden text-center mb-8">
-            <span className="text-4xl">🧬</span>
+            <Dna className="w-10 h-10 text-brand-600" />
             <h1 className="text-xl font-bold text-gray-800 mt-2">基因抗衰老分析平台</h1>
           </div>
 

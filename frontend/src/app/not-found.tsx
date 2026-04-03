@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Dna } from "lucide-react";
 
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center space-y-4 px-6">
-        <div className="text-6xl">🧬</div>
+        <Dna className="w-16 h-16 text-brand-300 mx-auto" />
         <h1 className="text-5xl font-bold text-gray-200">404</h1>
         <p className="text-lg text-gray-600 font-medium">页面未找到</p>
         <p className="text-sm text-gray-400 max-w-sm mx-auto">

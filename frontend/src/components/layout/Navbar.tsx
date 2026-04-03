@@ -3,19 +3,20 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { BarChart3, TrendingUp, Upload, BookOpen, Users, Settings, Moon, Sun, Dna, LogOut } from "lucide-react";
 import { authApi } from "@/lib/api";
 import type { User } from "@/types";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "我的分析", icon: "📊" },
-  { href: "/trends", label: "历史对比", icon: "📈" },
-  { href: "/upload", label: "上传数据", icon: "📤" },
+  { href: "/dashboard", label: "我的分析", icon: BarChart3 },
+  { href: "/trends", label: "历史对比", icon: TrendingUp },
+  { href: "/upload", label: "上传数据", icon: Upload },
 ];
 
 const ADMIN_ITEMS = [
-  { href: "/admin/knowledge", label: "知识库", icon: "📚" },
-  { href: "/admin/users", label: "用户管理", icon: "👥" },
-  { href: "/admin/settings", label: "设置", icon: "⚙️" },
+  { href: "/admin/knowledge", label: "知识库", icon: BookOpen },
+  { href: "/admin/users", label: "用户管理", icon: Users },
+  { href: "/admin/settings", label: "设置", icon: Settings },
 ];
 
 export default function Navbar() {
@@ -57,7 +58,7 @@ export default function Navbar() {
         {/* 左侧：Logo + 导航 */}
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="text-xl">🧬</span>
+            <Dna className="w-6 h-6 text-brand-600" />
             <span className="font-bold text-brand-700 dark:text-brand-400 hidden sm:inline">
               基因抗衰老
             </span>
@@ -74,7 +75,7 @@ export default function Navbar() {
                     : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
                 }`}
               >
-                <span className="text-sm">{item.icon}</span>
+                {(() => { const Icon = item.icon; return <Icon className="w-4 h-4" />; })()}
                 <span className="hidden md:inline">{item.label}</span>
               </Link>
             ))}
@@ -93,7 +94,7 @@ export default function Navbar() {
                         : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
                     }`}
                   >
-                    <span className="text-sm">{item.icon}</span>
+                    {(() => { const Icon = item.icon; return <Icon className="w-4 h-4" />; })()}
                     <span className="hidden md:inline">{item.label}</span>
                   </Link>
                 ))}
@@ -109,7 +110,7 @@ export default function Navbar() {
             className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             title={darkMode ? "切换到浅色模式" : "切换到深色模式"}
           >
-            {darkMode ? "☀️" : "🌙"}
+            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
           <span className="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">
@@ -124,8 +125,9 @@ export default function Navbar() {
 
           <button
             onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
+            className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition"
           >
+            <LogOut className="w-4 h-4" />
             退出
           </button>
         </div>

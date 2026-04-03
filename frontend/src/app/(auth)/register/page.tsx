@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Dna, Mail } from "lucide-react";
 import { authApi, ApiError } from "@/lib/api";
 import SocialLoginButtons from "@/components/auth/SocialLoginButtons";
 
@@ -65,7 +66,7 @@ export default function RegisterPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
         <div className="w-full max-w-sm text-center space-y-4">
-          <div className="text-5xl">📧</div>
+          <Mail className="w-12 h-12 text-brand-600" />
           <h1 className="text-xl font-bold text-gray-800">注册成功！请验证邮箱</h1>
           <p className="text-sm text-gray-500 leading-relaxed">
             验证码已发送到 <strong>{email}</strong>
@@ -99,7 +100,7 @@ export default function RegisterPage() {
       {/* 左侧品牌区域（复用 Login 风格） */}
       <div className="hidden lg:flex lg:w-1/2 gradient-brand flex-col justify-center px-16 relative overflow-hidden">
         <div className="relative z-10 max-w-lg">
-          <div className="text-5xl mb-6">🧬</div>
+          <Dna className="w-12 h-12 text-brand-600 mb-6" />
           <h1 className="text-3xl font-bold text-gray-800 mb-4">开始您的衰老分析之旅</h1>
           <p className="text-lg text-gray-600 leading-relaxed">
             创建账号后，您可以上传 DNA 甲基化数据，获取四大衰老时钟评估、19 维度系统分析和个性化的循证抗衰老建议。
@@ -121,7 +122,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center px-6 bg-white">
         <div className="w-full max-w-sm">
           <div className="lg:hidden text-center mb-8">
-            <span className="text-4xl">🧬</span>
+            <Dna className="w-10 h-10 text-brand-600" />
             <h1 className="text-xl font-bold text-gray-800 mt-2">基因抗衰老分析平台</h1>
           </div>
 

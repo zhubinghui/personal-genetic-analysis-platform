@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Cookies from "js-cookie";
+import { FileText, FileCode } from "lucide-react";
 import { knowledgeApi, ApiError } from "@/lib/api";
 import type { KnowledgeDocument, DocumentStatus } from "@/types";
 
@@ -13,12 +14,10 @@ const STATUS_MAP: Record<DocumentStatus, { label: string; cls: string }> = {
   failed:     { label: "失败",   cls: "bg-red-100 text-red-700" },
 };
 
-const FILE_TYPE_ICON: Record<string, string> = {
-  pdf: "📄",
-  docx: "📝",
-  txt: "📃",
-  md: "📃",
-};
+function FileTypeIcon({ type }: { type: string }) {
+  if (type === "md") return <FileCode className="w-4 h-4 text-gray-400" />;
+  return <FileText className="w-4 h-4 text-gray-400" />;
+}
 
 function formatBytes(bytes: number | null): string {
   if (bytes == null) return "—";
@@ -234,7 +233,7 @@ export default function KnowledgeListPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{FILE_TYPE_ICON[doc.file_type] ?? "📄"}</span>
+                      <FileTypeIcon type={doc.file_type} />
                       <h3 className="font-medium text-gray-800 truncate">{doc.title}</h3>
                       <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${s.cls}`}>
                         {s.label}

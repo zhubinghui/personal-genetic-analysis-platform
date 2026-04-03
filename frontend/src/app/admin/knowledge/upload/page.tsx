@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Paperclip, Package, FileText, X } from "lucide-react";
 import { knowledgeApi, ApiError } from "@/lib/api";
 
 const ACCEPTED_TYPES = ".pdf,.docx,.txt,.md,.zip";
@@ -80,7 +81,7 @@ export default function KnowledgeUploadPage() {
             multiple
           />
           <div className="space-y-2">
-            <p className="text-3xl text-gray-300">📎</p>
+            <Paperclip className="w-8 h-8 text-gray-300" />
             <p className="text-gray-600 font-medium">拖拽文件到此处，或点击选择</p>
             <p className="text-sm text-gray-400">
               支持 PDF / DOCX / TXT + ZIP 压缩包（自动解压）· 单文件最大 {MAX_SIZE_MB} MB
@@ -103,12 +104,12 @@ export default function KnowledgeUploadPage() {
             {files.map((f, i) => (
               <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
                 <div className="flex items-center gap-2 text-sm">
-                  <span>{f.name.endsWith(".zip") ? "📦" : f.name.endsWith(".pdf") ? "📄" : "📝"}</span>
+                  {f.name.endsWith(".zip") ? <Package className="w-4 h-4 text-gray-400 shrink-0" /> : <FileText className="w-4 h-4 text-gray-400 shrink-0" />}
                   <span className="text-gray-800 truncate max-w-xs">{f.name}</span>
                   <span className="text-xs text-gray-400">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
                 </div>
-                <button onClick={() => removeFile(i)} className="text-xs text-gray-400 hover:text-red-500">
-                  ✕
+                <button onClick={() => removeFile(i)} className="text-gray-400 hover:text-red-500">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             ))}

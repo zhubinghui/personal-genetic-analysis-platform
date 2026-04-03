@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Upload, Trash2 } from "lucide-react";
 import { authApi, sampleApi, ApiError } from "@/lib/api";
 import { useTokenRefresh } from "@/lib/tokenRefresh";
 import Navbar from "@/components/layout/Navbar";
@@ -102,7 +103,7 @@ export default function DashboardPage() {
 
         {samples.length === 0 ? (
           <div className="card border-2 border-dashed border-gray-200 p-12 text-center space-y-3">
-            <p className="text-3xl">📤</p>
+            <Upload className="w-10 h-10 text-gray-300" />
             <p className="text-gray-500 font-medium">暂无分析记录</p>
             <Link href="/upload" className="text-brand-600 hover:underline text-sm">
               上传您的第一份 DNA 甲基化数据 →
@@ -145,7 +146,7 @@ export default function DashboardPage() {
                     className="px-2.5 py-1.5 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
                     title="删除此采样数据"
                   >
-                    {deleting === sample.id ? "删除中..." : "🗑"}
+                    {deleting === sample.id ? "删除中..." : <Trash2 className="w-4 h-4" />}
                   </button>
                 </div>
               </div>

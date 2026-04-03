@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Mail, Smartphone, KeyRound } from "lucide-react";
 import { authApi, ApiError } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
@@ -31,7 +32,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
         <div className="w-full max-w-sm text-center space-y-4">
-          <div className="text-5xl">{channel === "email" ? "📧" : "📱"}</div>
+          <div className="flex justify-center">{channel === "email" ? <Mail className="w-12 h-12 text-brand-600" /> : <Smartphone className="w-12 h-12 text-brand-600" />}</div>
           <h1 className="text-xl font-bold text-gray-800">验证码已发送</h1>
           <p className="text-sm text-gray-500">
             重置验证码已发送到{channel === "email" ? "邮箱" : "手机"} <strong>{target}</strong>
@@ -54,7 +55,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <span className="text-4xl">🔑</span>
+          <KeyRound className="w-10 h-10 text-brand-600" />
           <h1 className="text-xl font-bold text-gray-800 mt-3">忘记密码</h1>
           <p className="text-sm text-gray-500 mt-1">选择验证方式接收重置验证码</p>
         </div>
@@ -69,7 +70,7 @@ export default function ForgotPasswordPage() {
                 channel === ch ? "bg-white text-brand-600 shadow-sm" : "text-gray-500"
               }`}
             >
-              {ch === "email" ? "📧 邮箱" : "📱 手机"}
+              {ch === "email" ? "邮箱" : "手机"}
             </button>
           ))}
         </div>

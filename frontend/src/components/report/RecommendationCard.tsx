@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { Salad, Dumbbell, Pill, Heart, Pin, ChevronRight, ChevronDown } from "lucide-react";
 import type { Recommendation } from "@/types";
 import InfoTip from "@/components/ui/InfoTip";
 
-const CATEGORY_ICONS: Record<string, string> = {
-  diet: "🥗",
-  exercise: "🏃",
-  supplement: "💊",
-  lifestyle: "🧘",
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  diet: Salad,
+  exercise: Dumbbell,
+  supplement: Pill,
+  lifestyle: Heart,
 };
 
 const EVIDENCE_COLORS: Record<string, string> = {
@@ -25,7 +26,7 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
     <div className="bg-white rounded-xl border p-5 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{CATEGORY_ICONS[rec.category] ?? "📌"}</span>
+          {(() => { const Icon = CATEGORY_ICONS[rec.category] ?? Pin; return <Icon className="w-5 h-5 text-brand-600 shrink-0" />; })()}
           <h4 className="font-semibold text-gray-800">{rec.title}</h4>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -65,7 +66,7 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
             onClick={() => setShowLiterature(!showLiterature)}
             className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 transition"
           >
-            <span className="text-sm">{showLiterature ? "▼" : "▶"}</span>
+            {showLiterature ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             知识库文献支撑（{rec.literature_references.length} 条）
           </button>
 

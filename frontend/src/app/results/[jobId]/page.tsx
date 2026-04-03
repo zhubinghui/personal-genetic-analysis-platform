@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { TrendingUp, Bot } from "lucide-react";
 import { reportApi, jobApi, ApiError } from "@/lib/api";
 import { useAnalysisJob } from "@/lib/hooks/useAnalysisJob";
 import AgeClockGauge from "@/components/charts/AgeClockGauge";
@@ -102,9 +103,10 @@ export default function ResultsPage() {
         <div className="flex gap-3">
           <Link
             href="/trends"
-            className="px-4 py-2 border border-brand-200 text-brand-600 rounded-lg text-sm hover:bg-brand-50 transition"
+            className="flex items-center gap-1.5 px-4 py-2 border border-brand-200 text-brand-600 rounded-lg text-sm hover:bg-brand-50 transition"
           >
-            📈 历史对比
+            <TrendingUp className="w-4 h-4" />
+            历史对比
           </Link>
           {report.pdf_available && (
             <a
@@ -171,7 +173,7 @@ export default function ResultsPage() {
         {report.ai_interpretation && (
           <div className="card p-6 space-y-3">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <span className="text-xl">🤖</span>
+              <Bot className="w-5 h-5 text-brand-600" />
               AI 深度解读
             </h2>
             <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
