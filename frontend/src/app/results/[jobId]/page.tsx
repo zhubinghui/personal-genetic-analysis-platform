@@ -8,6 +8,7 @@ import { useAnalysisJob } from "@/lib/hooks/useAnalysisJob";
 import AgeClockGauge from "@/components/charts/AgeClockGauge";
 import DunedinPaceRadar from "@/components/charts/DunedinPaceRadar";
 import AgingDimensionBars from "@/components/charts/AgingDimensionBars";
+import ChartErrorBoundary from "@/components/ChartErrorBoundary";
 import RecommendationCard from "@/components/report/RecommendationCard";
 import CohortBenchmark from "@/components/report/CohortBenchmark";
 import ChatBot from "@/components/report/ChatBot";
@@ -130,14 +131,18 @@ export default function ResultsPage() {
 
         {/* 时钟对比 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AgeClockGauge
-            horvathAge={clocks.horvath_age}
-            grimAge={clocks.grimage_age}
-            phenoAge={clocks.phenoage_age}
-            chronologicalAge={clocks.chronological_age}
-          />
+          <ChartErrorBoundary>
+            <AgeClockGauge
+              horvathAge={clocks.horvath_age}
+              grimAge={clocks.grimage_age}
+              phenoAge={clocks.phenoage_age}
+              chronologicalAge={clocks.chronological_age}
+            />
+          </ChartErrorBoundary>
           {dimensions && clocks.dunedinpace && (
-            <DunedinPaceRadar dimensions={dimensions} paceScore={clocks.dunedinpace} />
+            <ChartErrorBoundary>
+              <DunedinPaceRadar dimensions={dimensions} paceScore={clocks.dunedinpace} />
+            </ChartErrorBoundary>
           )}
         </div>
 
@@ -182,7 +187,11 @@ export default function ResultsPage() {
         {report.benchmark && <CohortBenchmark benchmark={report.benchmark} />}
 
         {/* 19 维度条形图 */}
-        {dimensions && <AgingDimensionBars dimensions={dimensions} />}
+        {dimensions && (
+          <ChartErrorBoundary>
+            <AgingDimensionBars dimensions={dimensions} />
+          </ChartErrorBoundary>
+        )}
 
         {/* 推荐建议 */}
         {recommendations.length > 0 && (

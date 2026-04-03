@@ -7,6 +7,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from "recharts";
+import ChartErrorBoundary from "@/components/ChartErrorBoundary";
 import { trendApi, ApiError } from "@/lib/api";
 import type { TrendResponse, TrendPoint } from "@/types";
 
@@ -92,67 +93,73 @@ export default function TrendsPage() {
         ) : (
           <>
             {/* 衰老时钟趋势折线图 */}
-            <div className="bg-white rounded-2xl border p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">衰老时钟评分趋势</h2>
-              <ResponsiveContainer width="100%" height={350}>
-                <LineChart data={_buildClockChartData(points)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="label" fontSize={12} />
-                  <YAxis fontSize={12} label={{ value: "岁 / 速率", angle: -90, position: "insideLeft" }} />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="实际年龄" stroke="#6b7280" strokeDasharray="5 5" dot={false} />
-                  <Line type="monotone" dataKey="Horvath" stroke={CLOCK_COLORS.horvath} strokeWidth={2} />
-                  <Line type="monotone" dataKey="GrimAge" stroke={CLOCK_COLORS.grimage} strokeWidth={2} />
-                  <Line type="monotone" dataKey="PhenoAge" stroke={CLOCK_COLORS.phenoage} strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartErrorBoundary fallbackHeight="350px">
+              <div className="bg-white rounded-2xl border p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">衰老时钟评分趋势</h2>
+                <ResponsiveContainer width="100%" height={350}>
+                  <LineChart data={_buildClockChartData(points)}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="label" fontSize={12} />
+                    <YAxis fontSize={12} label={{ value: "岁 / 速率", angle: -90, position: "insideLeft" }} />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="实际年龄" stroke="#6b7280" strokeDasharray="5 5" dot={false} />
+                    <Line type="monotone" dataKey="Horvath" stroke={CLOCK_COLORS.horvath} strokeWidth={2} />
+                    <Line type="monotone" dataKey="GrimAge" stroke={CLOCK_COLORS.grimage} strokeWidth={2} />
+                    <Line type="monotone" dataKey="PhenoAge" stroke={CLOCK_COLORS.phenoage} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartErrorBoundary>
 
             {/* DunedinPACE 趋势 */}
-            <div className="bg-white rounded-2xl border p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">DunedinPACE 衰老速率趋势</h2>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={_buildPaceChartData(points)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="label" fontSize={12} />
-                  <YAxis domain={[0.6, 1.4]} fontSize={12} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="DunedinPACE" stroke={CLOCK_COLORS.dunedinpace} strokeWidth={2.5} />
-                  <Line type="monotone" dataKey="基准线" stroke="#d1d5db" strokeDasharray="5 5" dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-              <p className="text-xs text-gray-400 mt-2 text-center">基准线 1.0 = 人群平均衰老速率</p>
-            </div>
+            <ChartErrorBoundary fallbackHeight="250px">
+              <div className="bg-white rounded-2xl border p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">DunedinPACE 衰老速率趋势</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={_buildPaceChartData(points)}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="label" fontSize={12} />
+                    <YAxis domain={[0.6, 1.4]} fontSize={12} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="DunedinPACE" stroke={CLOCK_COLORS.dunedinpace} strokeWidth={2.5} />
+                    <Line type="monotone" dataKey="基准线" stroke="#d1d5db" strokeDasharray="5 5" dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+                <p className="text-xs text-gray-400 mt-2 text-center">基准线 1.0 = 人群平均衰老速率</p>
+              </div>
+            </ChartErrorBoundary>
 
             {/* 维度雷达叠加对比 */}
-            <div className="bg-white rounded-2xl border p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">系统维度变化对比（雷达图）</h2>
-              <ResponsiveContainer width="100%" height={400}>
-                <RadarChart data={_buildRadarData(points)}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="system" fontSize={12} />
-                  <PolarRadiusAxis domain={[0, 2]} tickCount={5} fontSize={10} />
-                  {points.slice(-3).map((p, i) => {
-                    const colors = ["#3b82f6", "#10b981", "#f59e0b"];
-                    const date = new Date(p.uploaded_at).toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
-                    return (
-                      <Radar
-                        key={p.sample_id}
-                        name={date}
-                        dataKey={`v${i}`}
-                        stroke={colors[i]}
-                        fill={colors[i]}
-                        fillOpacity={0.1}
-                        strokeWidth={2}
-                      />
-                    );
-                  })}
-                  <Legend />
-                </RadarChart>
-              </ResponsiveContainer>
-              <p className="text-xs text-gray-400 text-center">展示最近 3 次采样的 9 大系统评分叠加对比</p>
-            </div>
+            <ChartErrorBoundary fallbackHeight="400px">
+              <div className="bg-white rounded-2xl border p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">系统维度变化对比（雷达图）</h2>
+                <ResponsiveContainer width="100%" height={400}>
+                  <RadarChart data={_buildRadarData(points)}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="system" fontSize={12} />
+                    <PolarRadiusAxis domain={[0, 2]} tickCount={5} fontSize={10} />
+                    {points.slice(-3).map((p, i) => {
+                      const colors = ["#3b82f6", "#10b981", "#f59e0b"];
+                      const date = new Date(p.uploaded_at).toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
+                      return (
+                        <Radar
+                          key={p.sample_id}
+                          name={date}
+                          dataKey={`v${i}`}
+                          stroke={colors[i]}
+                          fill={colors[i]}
+                          fillOpacity={0.1}
+                          strokeWidth={2}
+                        />
+                      );
+                    })}
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+                <p className="text-xs text-gray-400 text-center">展示最近 3 次采样的 9 大系统评分叠加对比</p>
+              </div>
+            </ChartErrorBoundary>
 
             {/* 历史数据表格 */}
             <div className="bg-white rounded-2xl border p-6">

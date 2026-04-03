@@ -1,0 +1,7 @@
+{
+  "qc_passed": true,
+  "n_probes_before": 866091,
+  "n_probes_after": 785302,
+  "detection_p_failed_fraction": 0.002,
+  "beta_matrix_path": "/tmp/genetic_analysis_abc123/beta_matrix.rds"
+}

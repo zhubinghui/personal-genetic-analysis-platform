@@ -1,0 +1,8 @@
+{
+  "qc_passed": false,
+  "error": "QC 失败: 检测 p 值异常探针比例 12.3% 超过阈值 5%",
+  "n_probes_before": 866091,
+  "n_probes_after": null,
+  "detection_p_failed_fraction": 0.123,
+  "beta_matrix_path": null
+}

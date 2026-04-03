@@ -1,0 +1,14 @@
+{
+  "dunedinpace": 1.032,
+  "dimensions": {
+    "cardiovascular": 1.05,
+    "metabolic": 0.92,
+    "renal": 1.01,
+    "hepatic": 0.88,
+    "pulmonary": 1.12,
+    "immune": 1.08,
+    "periodontal": 0.95,
+    "cognitive": 0.99,
+    "physical": 1.03
+  }
+}
