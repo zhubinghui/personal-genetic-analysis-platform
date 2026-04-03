@@ -1,7 +1,7 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,7 @@ from app.models.sample import Sample
 from app.models.user import User
 from app.services.report_service import ReportService
 from app.services.storage_service import StorageService, get_storage
+from app.utils.auth import decode_access_token
 
 router = APIRouter(prefix="/reports", tags=["报告"])
 
@@ -101,12 +102,37 @@ async def get_report(
 @router.get("/{job_id}/pdf")
 async def download_report_pdf(
     job_id: uuid.UUID,
-    current_user: Annotated[User, Depends(get_current_user)],
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
     storage: Annotated[StorageService, Depends(get_storage)],
+    token: Optional[str] = Query(None, description="JWT token（浏览器直接访问时使用）"),
 ) -> StreamingResponse:
-    """流式传输 PDF 报告（解密后直接传输，不落本地磁盘）"""
-    job = await _verify_job_ownership(job_id, current_user, db)
+    """流式传输 PDF 报告。
+
+    支持两种认证方式：
+    1. Authorization: Bearer <token> header（前端 fetch 调用）
+    2. ?token=<token> query parameter（浏览器直接打开预览）
+    """
+    # 从 query param 或 Authorization header 中提取 token
+    jwt_token = token
+    if not jwt_token:
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.lower().startswith("bearer "):
+            jwt_token = auth_header[7:]
+
+    if not jwt_token:
+        raise HTTPException(status_code=401, detail="缺少认证令牌")
+
+    payload = decode_access_token(jwt_token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="无效或已过期的令牌")
+    user_id = payload.get("sub")
+    result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=401, detail="用户不存在")
+
+    job = await _verify_job_ownership(job_id, user, db)
 
     # 获取 pseudonym_id
     result = await db.execute(select(Sample).where(Sample.id == job.sample_id))
@@ -130,5 +156,5 @@ async def download_report_pdf(
     return StreamingResponse(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="aging_report_{job_id}.pdf"'},
+        headers={"Content-Disposition": f'inline; filename="aging_report_{job_id}.pdf"'},
     )

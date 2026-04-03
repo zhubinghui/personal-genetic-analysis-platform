@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { TrendingUp, Bot } from "lucide-react";
+import { TrendingUp, Bot, FileText, Download } from "lucide-react";
 import { reportApi, jobApi, ApiError } from "@/lib/api";
 import { useAnalysisJob } from "@/lib/hooks/useAnalysisJob";
 import AgeClockGauge from "@/components/charts/AgeClockGauge";
@@ -109,12 +109,36 @@ export default function ResultsPage() {
             历史对比
           </Link>
           {report.pdf_available && (
-            <a
-              href={reportApi.pdfUrl(jobId)}
-              className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 transition shadow-sm"
-            >
-              下载 PDF 报告
-            </a>
+            <>
+              <a
+                href={reportApi.pdfUrl(jobId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 transition shadow-sm"
+              >
+                <FileText className="w-4 h-4" />
+                预览 PDF
+              </a>
+              <button
+                onClick={async () => {
+                  try {
+                    const blob = await reportApi.downloadPdf(jobId);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `aging_report_${jobId}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (e) {
+                    alert(e instanceof ApiError ? e.message : "下载失败");
+                  }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 border border-brand-200 text-brand-600 rounded-lg text-sm hover:bg-brand-50 transition"
+              >
+                <Download className="w-4 h-4" />
+                下载
+              </button>
+            </>
           )}
         </div>
       </header>

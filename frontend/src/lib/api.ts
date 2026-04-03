@@ -190,6 +190,17 @@ export const reportApi = {
   get: (jobId: string) => apiFetch<ReportData>(`/reports/${jobId}`),
   pdfUrl: (jobId: string) =>
     `${API_BASE}/api/v1/reports/${jobId}/pdf?token=${Cookies.get("access_token") ?? ""}`,
+  downloadPdf: async (jobId: string): Promise<Blob> => {
+    const token = Cookies.get("access_token") ?? "";
+    const res = await fetch(`${API_BASE}/api/v1/reports/${jobId}/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, data.detail ?? "PDF 下载失败");
+    }
+    return res.blob();
+  },
 };
 
 // ── OAuth 第三方登录 ────────────────────────────────────────────
