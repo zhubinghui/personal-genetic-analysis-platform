@@ -15,12 +15,13 @@
   POST /auth/wechat-miniapp/login — 微信小程序登录（code2session）
 """
 
+import logging
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_current_user
@@ -42,18 +43,19 @@ from app.schemas.user import (
 )
 from app.utils.auth import create_access_token, hash_password, verify_password
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["认证"])
 
 
 # ── 注册 ─────────────────────────────────────────
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
     body: UserCreate,
     request: Request,
-    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> User:
+) -> dict:
     existing = await db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="邮箱已注册")
@@ -81,10 +83,24 @@ async def register(
     await db.commit()
     await db.refresh(user)
 
-    # 自动发送验证码到邮箱
-    background_tasks.add_task(_send_code_background, "email", user.email)
+    # 同步发送验证码，失败时通知前端
+    code_sent = True
+    code_error = None
+    try:
+        from app.services.verification_service import send_verification_code
+        await send_verification_code("email", user.email)
+    except Exception as e:
+        logger.error("注册后验证码发送失败: email=%s error=%s", user.email, e)
+        code_sent = False
+        code_error = str(e)
 
-    return user
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "phone": user.phone,
+        "code_sent": code_sent,
+        "code_error": code_error,
+    }
 
 
 # ── 登录 ─────────────────────────────────────────
@@ -172,24 +188,40 @@ async def give_consent(
 # ── 双通道验证码 ─────────────────────────────────
 
 @router.post("/send-code")
-async def send_code(
-    body: SendCodeRequest,
-    background_tasks: BackgroundTasks,
-) -> dict:
+async def send_code(body: SendCodeRequest) -> dict:
     """发送验证码到邮箱或手机（不需要登录）。"""
     if body.channel not in ("email", "sms"):
         raise HTTPException(status_code=400, detail="channel 必须为 email 或 sms")
-    background_tasks.add_task(_send_code_background, body.channel, body.target)
+    try:
+        from app.services.verification_service import send_verification_code
+        await send_verification_code(body.channel, body.target)
+    except Exception as e:
+        logger.error("验证码发送失败: channel=%s target=%s error=%s", body.channel, body.target, e)
+        raise HTTPException(status_code=500, detail=f"验证码发送失败：{e}")
     return {"message": "验证码已发送，请查收"}
 
 
 @router.post("/verify-code")
 async def verify_code_endpoint(
     body: VerifyCodeRequest,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
-    """验证验证码并标记邮箱已验证。"""
+    """验证验证码并标记邮箱已验证。成功后自动返回 token，可直接登录。"""
     from app.services.verification_service import verify_code
+
+    # 验证码尝试次数限制：同一 IP 每 10 分钟最多 5 次
+    import redis.asyncio as aioredis
+    r = aioredis.from_url(settings.redis_url, decode_responses=True)
+    client_ip = request.client.host if request.client else "unknown"
+    rate_key = f"verify_attempts:{client_ip}"
+    attempts = await r.incr(rate_key)
+    if attempts == 1:
+        await r.expire(rate_key, 600)  # 10 分钟窗口
+    if attempts > 5:
+        await r.aclose()
+        raise HTTPException(status_code=429, detail="验证尝试过于频繁，请 10 分钟后再试")
+    await r.aclose()
 
     ok = await verify_code(f"verify:{body.channel}", body.target, body.code)
     if not ok:
@@ -207,7 +239,17 @@ async def verify_code_endpoint(
         user.email_verified_at = datetime.now(timezone.utc)
         await db.commit()
 
-    return {"message": "验证成功", "verified": True}
+    # 验证成功后自动生成 token，前端可直接登录
+    token = None
+    if user:
+        token = create_access_token({"sub": str(user.id)})
+
+    return {
+        "message": "验证成功",
+        "verified": True,
+        "access_token": token,
+        "expires_in": settings.jwt_access_expire_minutes * 60 if token else None,
+    }
 
 
 # ── 忘记密码 / 重置密码 ──────────────────────────
@@ -215,7 +257,6 @@ async def verify_code_endpoint(
 @router.post("/forgot-password")
 async def forgot_password(
     body: ForgotPasswordRequest,
-    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """发送重置验证码（不泄露用户是否存在）。"""
@@ -228,7 +269,12 @@ async def forgot_password(
 
     user = result.scalar_one_or_none()
     if user:
-        background_tasks.add_task(_send_reset_background, body.channel, body.target)
+        try:
+            from app.services.verification_service import send_reset_code
+            await send_reset_code(body.channel, body.target)
+        except Exception as e:
+            # 记录错误但不泄露用户是否存在
+            logger.error("重置验证码发送失败: channel=%s error=%s", body.channel, e)
 
     return {"message": "如果该账号已注册，验证码已发送"}
 
@@ -260,22 +306,6 @@ async def reset_password(
     return {"message": "密码重置成功，请使用新密码登录"}
 
 
-# ── 内部辅助 ─────────────────────────────────────
-
-async def _send_code_background(channel: str, target: str) -> None:
-    try:
-        from app.services.verification_service import send_verification_code
-        await send_verification_code(channel, target)
-    except Exception:
-        pass
-
-
-async def _send_reset_background(channel: str, target: str) -> None:
-    try:
-        from app.services.verification_service import send_reset_code
-        await send_reset_code(channel, target)
-    except Exception:
-        pass
 
 
 # ── 微信小程序登录 ───────────────────────────────────────────────

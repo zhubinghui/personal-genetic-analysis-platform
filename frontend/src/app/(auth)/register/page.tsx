@@ -53,7 +53,10 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await authApi.register(email, password, phone || undefined);
+      const res = await authApi.register(email, password, phone || undefined);
+      if (!res.code_sent) {
+        setError(`注册成功，但验证码发送失败：${res.code_error ?? "未知错误"}。请稍后在登录页重新发送。`);
+      }
       setRegistered(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "注册失败");
@@ -83,7 +86,7 @@ export default function RegisterPage() {
             没有收到？
             <button
               onClick={async () => {
-                try { await authApi.sendCode("email", email); alert("验证码已重新发送"); } catch {}
+                try { await authApi.sendCode("email", email); alert("验证码已重新发送"); } catch (e) { alert(e instanceof ApiError ? e.message : "发送失败，请稍后重试"); }
               }}
               className="text-brand-600 hover:underline"
             >

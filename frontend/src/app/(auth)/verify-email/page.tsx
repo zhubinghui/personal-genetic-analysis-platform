@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Cookies from "js-cookie";
 import { authApi, ApiError } from "@/lib/api";
 
 export default function VerifyEmailPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get("email") ?? "";
   const phoneParam = searchParams.get("phone") ?? "";
@@ -22,7 +24,16 @@ export default function VerifyEmailPage() {
     if (code.length !== 6) return;
     setLoading(true);
     try {
-      await authApi.verifyCode(channel, target, code);
+      const res = await authApi.verifyCode(channel, target, code);
+      // 后端验证成功后返回 token，直接登录
+      if (res.access_token) {
+        Cookies.set("access_token", res.access_token, {
+          expires: 1,
+          sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+        });
+        router.push("/dashboard");
+        return;
+      }
       setStatus("success");
     } catch (e) {
       setMessage(e instanceof ApiError ? e.message : "验证失败");

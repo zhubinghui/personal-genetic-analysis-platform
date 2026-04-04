@@ -46,8 +46,10 @@ def _sign(params: dict[str, str], secret: str) -> str:
 def _send_directmail(to: str, subject: str, html_body: str) -> None:
     """同步发送邮件（由 asyncio.to_thread 包裹调用）。"""
     if not settings.aliyun_access_key_id or not settings.aliyun_dm_account_name:
-        logger.warning("阿里云 DirectMail 未配置，跳过邮件发送: to=%s", to)
-        return
+        raise RuntimeError(
+            "阿里云 DirectMail 未配置（缺少 ALIYUN_ACCESS_KEY_ID 或 ALIYUN_DM_ACCOUNT_NAME），"
+            "无法发送邮件"
+        )
 
     params: dict[str, str] = {
         "Format": "JSON",
@@ -87,15 +89,15 @@ async def send_verification_email(to: str, code: str) -> None:
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
       <div style="text-align: center; margin-bottom: 24px;">
         <span style="font-size: 36px;">🧬</span>
-        <h2 style="color: #16a34a; margin: 8px 0 0;">基因抗衰老分析平台</h2>
+        <h2 style="color: #0284c7; margin: 8px 0 0;">基因抗衰老分析平台</h2>
       </div>
       <p style="color: #374151; font-size: 15px; line-height: 1.6;">您好，</p>
       <p style="color: #374151; font-size: 15px; line-height: 1.6;">
         您的邮箱验证码为：
       </p>
       <div style="text-align: center; margin: 28px 0;">
-        <span style="display: inline-block; padding: 16px 40px; background: #f0fdf4; border: 2px solid #16a34a;
-                     border-radius: 12px; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #16a34a;">
+        <span style="display: inline-block; padding: 16px 40px; background: #f0f9ff; border: 2px solid #0284c7;
+                     border-radius: 12px; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #0284c7;">
           {code}
         </span>
       </div>
@@ -113,7 +115,7 @@ async def send_reset_email(to: str, code: str) -> None:
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
       <div style="text-align: center; margin-bottom: 24px;">
         <span style="font-size: 36px;">🧬</span>
-        <h2 style="color: #16a34a; margin: 8px 0 0;">基因抗衰老分析平台</h2>
+        <h2 style="color: #0284c7; margin: 8px 0 0;">基因抗衰老分析平台</h2>
       </div>
       <p style="color: #374151; font-size: 15px; line-height: 1.6;">您好，</p>
       <p style="color: #374151; font-size: 15px; line-height: 1.6;">

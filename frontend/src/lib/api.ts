@@ -65,7 +65,7 @@ async function apiFetch<T>(
 // ── 认证 ────────────────────────────────────────────────────
 export const authApi = {
   register: (email: string, password: string, phone?: string) =>
-    apiFetch<User>("/auth/register", {
+    apiFetch<{ id: string; email: string; phone?: string; code_sent: boolean; code_error?: string }>("/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, ...(phone ? { phone } : {}) }),
@@ -119,7 +119,7 @@ export const authApi = {
     }),
 
   verifyCode: (channel: "email" | "sms", target: string, code: string) =>
-    apiFetch<{ message: string; verified: boolean }>("/auth/verify-code", {
+    apiFetch<{ message: string; verified: boolean; access_token?: string; expires_in?: number }>("/auth/verify-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ channel, target, code }),

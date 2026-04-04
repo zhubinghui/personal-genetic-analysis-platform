@@ -20,8 +20,10 @@ logger = logging.getLogger(__name__)
 def _send_aliyun_sms(phone: str, code: str) -> None:
     """同步发送阿里云短信。"""
     if not settings.aliyun_access_key_id or not settings.aliyun_access_key_secret:
-        logger.warning("阿里云短信未配置，跳过发送: phone=%s", phone)
-        return
+        raise RuntimeError(
+            "阿里云短信未配置（缺少 ALIYUN_ACCESS_KEY_ID 或 ALIYUN_ACCESS_KEY_SECRET），"
+            "无法发送短信"
+        )
 
     from alibabacloud_dysmsapi20170525.client import Client
     from alibabacloud_dysmsapi20170525.models import SendSmsRequest
